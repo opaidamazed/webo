@@ -1,0 +1,38 @@
+<Window
+    x:Class="WeboIconSpike.MainWindow"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <ScrollViewer>
+        <StackPanel Padding="24" Spacing="14" MaxWidth="920" HorizontalAlignment="Center" FlowDirection="RightToLeft">
+
+            <TextBlock Text="Webo — نموذج تجريبي لأيقونة التطبيق (D9)" FontSize="22" FontWeight="SemiBold" />
+            <TextBlock TextWrapping="Wrap"
+                       Text="هذا نموذج اختبار فقط وليس كود المنتج. اختر أيقونة، ثم افحص كل موضع من المواضع الستة بعينك وسجّل النتيجة. التطبيق يسجّل ما أرجعته الواجهات البرمجية فقط، ولا يدّعي نجاح التغيير البصري." />
+            <TextBlock x:Name="OsInfo" TextWrapping="Wrap" Opacity="0.75" FlowDirection="LeftToRight" />
+
+            <StackPanel Orientation="Horizontal" Spacing="24">
+                <RadioButtons x:Name="IconChoice" Header="أيقونة التطبيق — App Icon"
+                              SelectionChanged="IconChoice_SelectionChanged" />
+                <Image x:Name="PreviewImage" Width="128" Height="128" />
+            </StackPanel>
+
+            <StackPanel Orientation="Horizontal" Spacing="10">
+                <Button Content="إنشاء/تحديث اختصار سطح المكتب" Click="DesktopShortcut_Click" />
+                <Button Content="إنشاء/تحديث اختصار Start" Click="StartShortcut_Click" />
+                <Button Content="إخطار الـ Shell بتحديث الأيقونات" Click="NotifyShell_Click" />
+            </StackPanel>
+            <StackPanel Orientation="Horizontal" Spacing="10">
+                <Button Content="استعادة الافتراضي (الداكنة)" Click="Reset_Click" />
+                <Button Content="تصدير النتائج (JSON)" Click="Export_Click" />
+            </StackPanel>
+
+            <TextBlock Text="نتيجة كل موضع (تُسجَّل يدويًا بعد الفحص البصري)" FontWeight="SemiBold" Margin="0,8,0,0" />
+            <StackPanel x:Name="ResultsPanel" Spacing="8" />
+
+            <TextBlock Text="السجل" FontWeight="SemiBold" Margin="0,8,0,0" />
+            <TextBox x:Name="LogBox" IsReadOnly="True" AcceptsReturn="True" TextWrapping="Wrap"
+                     Height="240" FlowDirection="LeftToRight" FontFamily="Consolas" />
+        </StackPanel>
+    </ScrollViewer>
+</Window>
