@@ -1,0 +1,63 @@
+<Page
+    x:Class="Webo.App.Pages.SettingsPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:Webo.App">
+
+    <ScrollViewer VerticalScrollBarVisibility="Auto">
+        <StackPanel MaxWidth="900" Padding="36,24,36,40" Spacing="18" HorizontalAlignment="Center">
+
+            <TextBlock Text="{x:Bind local:Loc.T('st.title')}" Style="{StaticResource WeboDisplayText}" />
+
+            <!-- Appearance -->
+            <Border Style="{StaticResource WeboCard}">
+                <StackPanel Spacing="18">
+                    <TextBlock Text="{x:Bind local:Loc.T('st.appearance')}" Style="{StaticResource WeboHeadingText}" />
+
+                    <StackPanel Spacing="6">
+                        <TextBlock Text="{x:Bind local:Loc.T('st.lang')}" Style="{StaticResource WeboLabelText}" />
+                        <RadioButtons x:Name="LangChoice" MaxColumns="2" SelectionChanged="LangChoice_SelectionChanged" />
+                        <TextBlock Text="{x:Bind local:Loc.T('st.lang.note')}" Style="{StaticResource WeboMutedText}" />
+                    </StackPanel>
+
+                    <StackPanel Spacing="6">
+                        <TextBlock Text="{x:Bind local:Loc.T('st.theme')}" Style="{StaticResource WeboLabelText}" />
+                        <RadioButtons x:Name="ThemeChoice" MaxColumns="3" SelectionChanged="ThemeChoice_SelectionChanged" />
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+
+            <!-- App icon (requirements section 22) -->
+            <Border Style="{StaticResource WeboCard}">
+                <StackPanel Spacing="16">
+                    <TextBlock Text="{x:Bind local:Loc.T('st.icon')}" Style="{StaticResource WeboHeadingText}" />
+                    <TextBlock Text="{x:Bind local:Loc.T('st.icon.note')}" Style="{StaticResource WeboMutedText}" />
+
+                    <StackPanel x:Name="IconCards" Orientation="Horizontal" Spacing="14" />
+
+                    <StackPanel Orientation="Horizontal" Spacing="10">
+                        <Button Content="{x:Bind local:Loc.T('st.icon.reset')}" Click="ResetIcon_Click" />
+                    </StackPanel>
+                    <InfoBar x:Name="IconStatus" IsOpen="False" IsClosable="False" Severity="Informational" />
+
+                    <TextBlock Text="{x:Bind local:Loc.T('st.sc.title')}" Style="{StaticResource WeboLabelText}" Margin="0,8,0,0" />
+                    <TextBlock Text="{x:Bind local:Loc.T('st.sc.note')}" Style="{StaticResource WeboMutedText}" />
+                    <StackPanel Orientation="Horizontal" Spacing="10">
+                        <Button Content="{x:Bind local:Loc.T('st.sc.desktop')}" Click="DesktopShortcut_Click" />
+                        <Button Content="{x:Bind local:Loc.T('st.sc.start')}" Click="StartShortcut_Click" />
+                    </StackPanel>
+                    <InfoBar x:Name="ShortcutStatus" IsOpen="False" IsClosable="False" Severity="Informational" />
+                </StackPanel>
+            </Border>
+
+            <!-- About -->
+            <Border Style="{StaticResource WeboCard}">
+                <StackPanel Spacing="8">
+                    <TextBlock Text="{x:Bind local:Loc.T('st.about')}" Style="{StaticResource WeboHeadingText}" />
+                    <TextBlock x:Name="AboutText" Style="{StaticResource WeboMutedText}" />
+                    <TextBlock Text="{x:Bind local:Loc.T('st.data')}" Style="{StaticResource WeboMutedText}" />
+                </StackPanel>
+            </Border>
+        </StackPanel>
+    </ScrollViewer>
+</Page>
