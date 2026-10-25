@@ -1,25 +1,88 @@
-name: Build Webo Icon Spike (Windows)
+name: Build Webo (Windows)
+
 on:
   workflow_dispatch:
   push:
+    branches: [ main ]
+    tags: [ 'v*' ]
+
+permissions:
+  contents: write
+
+env:
+  WEBO_VERSION: 0.2.0
+
 jobs:
   build:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
+
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: 8.0.x
-      - name: Publish
+
+      - name: Publish (self-contained, win-x64)
         shell: pwsh
-        run: dotnet publish WeboIconSpike.csproj -c Release -r win-x64 -p:Platform=x64 -o out
-      - name: Verify EXE and icons exist
+        run: dotnet publish src/Webo.App/Webo.App.csproj -c Release -r win-x64 -p:Platform=x64 -o out
+
+      - name: Verify the publish output
         shell: pwsh
         run: |
-          if (!(Test-Path out/WeboIconSpike.exe)) { throw "EXE missing" }
-          if (!(Test-Path out/Assets/Brand/derived/icons/dark/webo-dark.ico)) { throw "icons missing" }
-          Get-ChildItem out | Measure-Object
+          $must = @(
+            'out/Webo.exe',
+            'out/Assets/Brand/derived/icons/dark/webo-dark.ico',
+            'out/Assets/Brand/derived/icons/dark/preview-256.png',
+            'out/Assets/Brand/derived/icons/light/webo-light.ico',
+            'out/Assets/Brand/derived/icons/mono/webo-mono.ico',
+            'out/Assets/Fonts/IBMPlexSansArabic-Regular.ttf',
+            'out/Assets/Fonts/IBMPlexSansArabic-Medium.ttf',
+            'out/Assets/Fonts/IBMPlexSansArabic-SemiBold.ttf',
+            'out/Assets/Fonts/IBMPlexSansArabic-Bold.ttf'
+          )
+          $missing = $must | Where-Object { -not (Test-Path $_) }
+          if ($missing) { throw "Missing from publish output: $($missing -join ', ')" }
+          Get-ChildItem out | Measure-Object | Select-Object Count
+
+      - name: Smoke test (the app must start and stay alive)
+        continue-on-error: true   # informational: a headless runner may not host a WinUI window
+        shell: pwsh
+        run: |
+          $p = Start-Process -FilePath "$PWD/out/Webo.exe" -PassThru
+          Start-Sleep -Seconds 12
+          if ($p.HasExited) { throw "Webo.exe exited early with code $($p.ExitCode)" }
+          Write-Host "Webo.exe is still running after 12s (PID $($p.Id)); stopping it."
+          Stop-Process -Id $p.Id -Force
+
+      - name: Install Inno Setup
+        shell: pwsh
+        run: choco install innosetup -y --no-progress
+
+      - name: Build installer
+        shell: pwsh
+        run: |
+          & "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe" "/DAppVersion=$env:WEBO_VERSION" installer\webo.iss
+          if ($LASTEXITCODE -ne 0) { throw "ISCC failed with exit code $LASTEXITCODE" }
+
+      - name: Package portable ZIP and checksums
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force dist | Out-Null
+          Compress-Archive -Path out\* -DestinationPath "dist/Webo-$env:WEBO_VERSION-portable-win-x64.zip" -Force
+          Get-ChildItem dist -File | ForEach-Object {
+            $h = (Get-FileHash $_.FullName -Algorithm SHA256).Hash.ToLower()
+            "$h  $($_.Name)"
+          } | Set-Content dist/SHA256SUMS.txt
+          Get-Content dist/SHA256SUMS.txt
+
       - uses: actions/upload-artifact@v4
         with:
-          name: WeboIconSpike-win-x64
-          path: out
+          name: Webo-${{ env.WEBO_VERSION }}-windows
+          path: dist/*
+
+      - name: Publish GitHub pre-release (tags only)
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/*
+          prerelease: true
