@@ -1,0 +1,110 @@
+<ResourceDictionary
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!-- Fonts: IBM Plex Sans Arabic (SIL OFL). Segoe UI is only the fallback if a file is missing. -->
+    <FontFamily x:Key="WeboFont">ms-appx:///Assets/Fonts/IBMPlexSansArabic-Regular.ttf#IBM Plex Sans Arabic, Segoe UI</FontFamily>
+    <FontFamily x:Key="WeboFontMedium">ms-appx:///Assets/Fonts/IBMPlexSansArabic-Medium.ttf#IBM Plex Sans Arabic Medium, Segoe UI</FontFamily>
+    <FontFamily x:Key="WeboFontSemiBold">ms-appx:///Assets/Fonts/IBMPlexSansArabic-SemiBold.ttf#IBM Plex Sans Arabic SemiBold, Segoe UI</FontFamily>
+    <FontFamily x:Key="WeboFontBold">ms-appx:///Assets/Fonts/IBMPlexSansArabic-Bold.ttf#IBM Plex Sans Arabic, Segoe UI</FontFamily>
+
+    <!-- Every control (buttons, text boxes, lists...) takes its font from this key. -->
+    <FontFamily x:Key="ContentControlThemeFontFamily">ms-appx:///Assets/Fonts/IBMPlexSansArabic-Regular.ttf#IBM Plex Sans Arabic, Segoe UI</FontFamily>
+
+    <Color x:Key="SystemAccentColor">#2090F0</Color>
+    <Color x:Key="SystemAccentColorLight1">#4AA6F5</Color>
+    <Color x:Key="SystemAccentColorLight2">#78BEF8</Color>
+    <Color x:Key="SystemAccentColorLight3">#A6D5FA</Color>
+    <Color x:Key="SystemAccentColorDark1">#1678D0</Color>
+    <Color x:Key="SystemAccentColorDark2">#0F5FA8</Color>
+    <Color x:Key="SystemAccentColorDark3">#0A4780</Color>
+
+    <ResourceDictionary.ThemeDictionaries>
+
+        <ResourceDictionary x:Key="Light">
+            <SolidColorBrush x:Key="WeboBgBrush" Color="#F3F6FC" />
+            <SolidColorBrush x:Key="WeboSurfaceBrush" Color="#FFFFFF" />
+            <SolidColorBrush x:Key="WeboSurfaceAltBrush" Color="#E9EFFA" />
+            <SolidColorBrush x:Key="WeboBorderBrush" Color="#D6DEEE" />
+            <SolidColorBrush x:Key="WeboInkBrush" Color="#0B1033" />
+            <SolidColorBrush x:Key="WeboMutedBrush" Color="#5A6482" />
+            <SolidColorBrush x:Key="WeboAccentBrush" Color="#2090F0" />
+            <SolidColorBrush x:Key="WeboAccentSoftBrush" Color="#DCEEFE" />
+            <SolidColorBrush x:Key="WeboCanvasBrush" Color="#E3E9F5" />
+            <SolidColorBrush x:Key="AccentFillColorDefaultBrush" Color="#1678D0" />
+            <SolidColorBrush x:Key="AccentFillColorSecondaryBrush" Color="#1F88E6" />
+            <SolidColorBrush x:Key="AccentFillColorTertiaryBrush" Color="#0F5FA8" />
+            <SolidColorBrush x:Key="TextOnAccentFillColorPrimaryBrush" Color="#FFFFFF" />
+        </ResourceDictionary>
+
+        <ResourceDictionary x:Key="Dark">
+            <SolidColorBrush x:Key="WeboBgBrush" Color="#070B22" />
+            <SolidColorBrush x:Key="WeboSurfaceBrush" Color="#0E1433" />
+            <SolidColorBrush x:Key="WeboSurfaceAltBrush" Color="#151C42" />
+            <SolidColorBrush x:Key="WeboBorderBrush" Color="#232C58" />
+            <SolidColorBrush x:Key="WeboInkBrush" Color="#EEF2FF" />
+            <SolidColorBrush x:Key="WeboMutedBrush" Color="#9AA5CC" />
+            <SolidColorBrush x:Key="WeboAccentBrush" Color="#3AA0FF" />
+            <SolidColorBrush x:Key="WeboAccentSoftBrush" Color="#12294D" />
+            <SolidColorBrush x:Key="WeboCanvasBrush" Color="#0A0F2B" />
+            <SolidColorBrush x:Key="AccentFillColorDefaultBrush" Color="#3AA0FF" />
+            <SolidColorBrush x:Key="AccentFillColorSecondaryBrush" Color="#5BB0FF" />
+            <SolidColorBrush x:Key="AccentFillColorTertiaryBrush" Color="#2A86E0" />
+            <SolidColorBrush x:Key="TextOnAccentFillColorPrimaryBrush" Color="#00102A" />
+        </ResourceDictionary>
+
+    </ResourceDictionary.ThemeDictionaries>
+
+    <!-- Text styles -->
+    <Style TargetType="TextBlock">
+        <Setter Property="FontFamily" Value="{StaticResource WeboFont}" />
+        <Setter Property="Foreground" Value="{ThemeResource WeboInkBrush}" />
+    </Style>
+
+    <Style x:Key="WeboDisplayText" TargetType="TextBlock">
+        <Setter Property="FontFamily" Value="{StaticResource WeboFontBold}" />
+        <Setter Property="FontWeight" Value="Bold" />
+        <Setter Property="FontSize" Value="32" />
+        <Setter Property="Foreground" Value="{ThemeResource WeboInkBrush}" />
+    </Style>
+
+    <Style x:Key="WeboHeadingText" TargetType="TextBlock">
+        <Setter Property="FontFamily" Value="{StaticResource WeboFontSemiBold}" />
+        <Setter Property="FontSize" Value="18" />
+        <Setter Property="Foreground" Value="{ThemeResource WeboInkBrush}" />
+    </Style>
+
+    <Style x:Key="WeboLabelText" TargetType="TextBlock">
+        <Setter Property="FontFamily" Value="{StaticResource WeboFontMedium}" />
+        <Setter Property="FontSize" Value="14" />
+        <Setter Property="Foreground" Value="{ThemeResource WeboInkBrush}" />
+    </Style>
+
+    <Style x:Key="WeboMutedText" TargetType="TextBlock">
+        <Setter Property="FontFamily" Value="{StaticResource WeboFont}" />
+        <Setter Property="FontSize" Value="13" />
+        <Setter Property="Foreground" Value="{ThemeResource WeboMutedBrush}" />
+        <Setter Property="TextWrapping" Value="Wrap" />
+    </Style>
+
+    <!-- Surfaces -->
+    <Style x:Key="WeboCard" TargetType="Border">
+        <Setter Property="Background" Value="{ThemeResource WeboSurfaceBrush}" />
+        <Setter Property="BorderBrush" Value="{ThemeResource WeboBorderBrush}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="CornerRadius" Value="16" />
+        <Setter Property="Padding" Value="22" />
+    </Style>
+
+    <Style x:Key="WeboPanel" TargetType="Border">
+        <Setter Property="Background" Value="{ThemeResource WeboSurfaceBrush}" />
+        <Setter Property="BorderBrush" Value="{ThemeResource WeboBorderBrush}" />
+        <Setter Property="BorderThickness" Value="0" />
+    </Style>
+
+    <Style x:Key="WeboPillText" TargetType="TextBlock" BasedOn="{StaticResource WeboLabelText}">
+        <Setter Property="FontSize" Value="12" />
+        <Setter Property="Foreground" Value="{ThemeResource WeboAccentBrush}" />
+    </Style>
+
+</ResourceDictionary>
