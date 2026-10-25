@@ -27,9 +27,21 @@ jobs:
         run: |
           dotnet publish src/Webo.App/Webo.App.csproj -c Release -r win-x64 -p:Platform=x64 -o out
           if ($LASTEXITCODE -ne 0) {
-            Write-Host "=== XAML compiler details (output.json) ==="
-            Get-ChildItem -Path src/Webo.App/obj -Recurse -Filter output.json -ErrorAction SilentlyContinue |
-              ForEach-Object { Write-Host "--- $($_.FullName)"; Get-Content $_.FullName -Raw }
+            Write-Host "=== DIAG 1: files under obj ==="
+            Get-ChildItem -Path src/Webo.App/obj -Recurse -File -ErrorAction SilentlyContinue |
+              Where-Object { $_.Name -match 'json$|\.g\.|xaml' } | ForEach-Object { $_.FullName }
+            $dir = Get-ChildItem -Path src/Webo.App/obj -Recurse -Filter input.json -ErrorAction SilentlyContinue | Select-Object -First 1
+            if ($dir) {
+              Write-Host "=== DIAG 2: running XamlCompiler manually ==="
+              $xc = Get-ChildItem "$env:USERPROFILE\.nuget\packages\microsoft.windowsappsdk\1.5.240802000" -Recurse -Filter XamlCompiler.exe | Where-Object { $_.FullName -match 'net472' } | Select-Object -First 1
+              $in = $dir.FullName; $out = Join-Path $dir.DirectoryName 'manual-output.json'
+              Push-Location src/Webo.App
+              $result = & $xc.FullName $in $out 2>&1
+              Write-Host "exit code: $LASTEXITCODE"
+              $result | ForEach-Object { Write-Host $_ }
+              Pop-Location
+              if (Test-Path $out) { Write-Host "=== DIAG 3: manual-output.json ==="; Get-Content $out -Raw }
+            }
             exit 1
           }
 
