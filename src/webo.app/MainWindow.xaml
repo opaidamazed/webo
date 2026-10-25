@@ -1,0 +1,37 @@
+<Window
+    x:Class="Webo.App.MainWindow"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <Grid x:Name="Root" Background="{ThemeResource WeboBgBrush}">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <!-- Custom title bar: always left-to-right so it never collides with the system caption buttons. -->
+        <Grid x:Name="TitleBar" Height="44" FlowDirection="LeftToRight" Background="Transparent">
+            <StackPanel Orientation="Horizontal" Spacing="10" Margin="14,0,0,0" VerticalAlignment="Center">
+                <Image x:Name="TitleIcon" Width="22" Height="22" />
+                <TextBlock x:Name="TitleText" Text="Webo" FontSize="13"
+                           FontFamily="{StaticResource WeboFontSemiBold}" VerticalAlignment="Center" />
+            </StackPanel>
+        </Grid>
+
+        <NavigationView x:Name="Nav" Grid.Row="1"
+                        PaneDisplayMode="Left" OpenPaneLength="232"
+                        IsBackButtonVisible="Collapsed" IsSettingsVisible="False"
+                        IsPaneToggleButtonVisible="False"
+                        Background="Transparent"
+                        SelectionChanged="Nav_SelectionChanged">
+            <NavigationView.MenuItems>
+                <NavigationViewItem x:Name="NavHome" Tag="home" Icon="Home" />
+                <NavigationViewItem x:Name="NavTemplates" Tag="templates" Icon="Library" IsEnabled="False" />
+            </NavigationView.MenuItems>
+            <NavigationView.FooterMenuItems>
+                <NavigationViewItem x:Name="NavSettings" Tag="settings" Icon="Setting" />
+            </NavigationView.FooterMenuItems>
+            <Frame x:Name="ContentFrame" />
+        </NavigationView>
+    </Grid>
+</Window>
