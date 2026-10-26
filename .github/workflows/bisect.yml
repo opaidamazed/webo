@@ -1,0 +1,75 @@
+name: Bisect XAML crash
+
+on:
+  workflow_dispatch:
+
+jobs:
+  try:
+    runs-on: windows-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        stub: [baseline, themes, fonts, accent, appmerge, home, settings, editor, mainwindow]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Apply variant (${{ matrix.stub }})
+        shell: pwsh
+        env:
+          STUB: ${{ matrix.stub }}
+        run: |
+          $p = 'src/Webo.App'
+          $ns = 'xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"'
+          switch ($env:STUB) {
+            'themes'     { Set-Content "$p/Themes/Webo.xaml" "<ResourceDictionary $ns />" }
+            'fonts'      { (Get-Content "$p/Themes/Webo.xaml" -Raw) -replace '(<FontFamily x:Key="[^"]+">)[^<]*(</FontFamily>)', '$1Segoe UI$2' | Set-Content "$p/Themes/Webo.xaml" }
+            'accent'     { (Get-Content "$p/Themes/Webo.xaml" -Raw) -replace '(?m)^\s*<Color x:Key="SystemAccentColor[^\r\n]*\r?\n', '' | Set-Content "$p/Themes/Webo.xaml" }
+            'appmerge'   { (Get-Content "$p/App.xaml" -Raw) -replace '<ResourceDictionary Source="Themes/Webo.xaml" />', '' | Set-Content "$p/App.xaml" }
+            'home'       { Set-Content "$p/Pages/HomePage.xaml" "<Page x:Class=`"Webo.App.Pages.HomePage`" $ns><Grid /></Page>" }
+            'settings'   { Set-Content "$p/Pages/SettingsPage.xaml" "<Page x:Class=`"Webo.App.Pages.SettingsPage`" $ns><Grid /></Page>" }
+            'editor'     { Set-Content "$p/Pages/EditorPage.xaml" "<Page x:Class=`"Webo.App.Pages.EditorPage`" $ns><Grid /></Page>" }
+            'mainwindow' { Set-Content "$p/MainWindow.xaml" "<Window x:Class=`"Webo.App.MainWindow`" $ns><Grid /></Window>" }
+            default      { Write-Host "baseline: no change" }
+          }
+
+      - name: Build and classify
+        shell: pwsh
+        env:
+          STUB: ${{ matrix.stub }}
+        run: |
+          dotnet publish src/Webo.App/Webo.App.csproj -c Release -r win-x64 -p:Platform=x64 -o out *> build.log
+          $code = $LASTEXITCODE
+          $log = Get-Content build.log -Raw
+          if ($code -eq 0) { $res = "BUILD OK" }
+          elseif ($log -match 'XamlCompiler\.exe' -and $log -notmatch 'error CS\d+' -and $log -notmatch 'error WMC\d+') { $res = "SILENT XAML CRASH (same as before)" }
+          else {
+            $errs = (Select-String -Path build.log -Pattern 'error ' | Select-Object -First 4 | ForEach-Object { $_.Line.Trim() }) -join "`n"
+            $res = "DIFFERENT RESULT:`n$errs"
+          }
+          New-Item -ItemType Directory -Force result | Out-Null
+          Set-Content "result/$($env:STUB).txt" "$($env:STUB): $res"
+          Write-Host $res
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: result-${{ matrix.stub }}
+          path: result/*
+
+  summary:
+    needs: try
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: result-*
+          merge-multiple: true
+          path: results
+      - name: Show results
+        run: |
+          echo "=========== BISECT RESULTS ==========="
+          for f in results/*.txt; do cat "$f"; echo "-----"; done
