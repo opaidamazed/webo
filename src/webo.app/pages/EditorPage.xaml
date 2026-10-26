@@ -1,9 +1,7 @@
 <Page
     x:Class="Webo.App.Pages.EditorPage"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-    xmlns:local="using:Webo.App"
-    xmlns:models="using:Webo.App.Models">
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
 
     <Grid>
         <Grid.RowDefinitions>
@@ -94,21 +92,7 @@
                         </Button>
                     </Grid>
                     <ListView x:Name="PagesList" Grid.Row="1" SelectionMode="Single"
-                              SelectionChanged="PagesList_SelectionChanged">
-                        <ListView.ItemTemplate>
-                            <DataTemplate x:DataType="models:PageDoc">
-                                <Grid ColumnSpacing="8" Padding="2,6">
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="Auto" />
-                                        <ColumnDefinition Width="*" />
-                                    </Grid.ColumnDefinitions>
-                                    <FontIcon Glyph="&#xE80F;" FontSize="14" Visibility="{x:Bind HomeVisibility, Mode=OneWay}"
-                                              Foreground="{ThemeResource WeboAccentBrush}" />
-                                    <TextBlock Grid.Column="1" Text="{x:Bind Title, Mode=OneWay}" TextTrimming="CharacterEllipsis" />
-                                </Grid>
-                            </DataTemplate>
-                        </ListView.ItemTemplate>
-                    </ListView>
+                              SelectionChanged="PagesList_SelectionChanged" />
                 </Grid>
             </Border>
 
@@ -122,18 +106,7 @@
                             <StackPanel x:Name="SitePreview" Padding="30,22" Spacing="18">
                                 <ScrollViewer HorizontalScrollMode="Enabled" HorizontalScrollBarVisibility="Hidden"
                                               VerticalScrollMode="Disabled">
-                                    <ItemsControl x:Name="NavChips">
-                                        <ItemsControl.ItemsPanel>
-                                            <ItemsPanelTemplate>
-                                                <StackPanel Orientation="Horizontal" Spacing="20" />
-                                            </ItemsPanelTemplate>
-                                        </ItemsControl.ItemsPanel>
-                                        <ItemsControl.ItemTemplate>
-                                            <DataTemplate x:DataType="models:PageDoc">
-                                                <TextBlock Text="{x:Bind Title, Mode=OneWay}" FontSize="14" Foreground="#2090F0" />
-                                            </DataTemplate>
-                                        </ItemsControl.ItemTemplate>
-                                    </ItemsControl>
+                                    <StackPanel x:Name="NavChips" Orientation="Horizontal" Spacing="20" />
                                 </ScrollViewer>
                                 <Border Height="1" Background="#14000000" />
                                 <TextBlock x:Name="CanvasTitle" FontSize="34" FontFamily="{StaticResource WeboFontBold}"

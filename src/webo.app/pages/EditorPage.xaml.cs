@@ -1,4 +1,3 @@
-using System.Collections.ObjectModel;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Controls.Primitives;
@@ -16,7 +15,9 @@ public sealed partial class EditorPage : Page
 {
     private ProjectDoc? _doc;
     private string? _file;
-    private readonly ObservableCollection<PageDoc> _pages = new();
+    private readonly List<PageDoc> _pages = new();
+    private readonly Dictionary<PageDoc, TextBlock> _titleBlocks = new();
+    private bool _rebuilding;
     private bool _dirty;
     private bool _updatingUi;
     private DispatcherTimerHolder? _timer;
@@ -58,13 +59,11 @@ public sealed partial class EditorPage : Page
         FolderText.Text = Loc.F("ed.folder", Path.GetDirectoryName(_file) ?? "");
 
         foreach (var p in _doc.Pages) _pages.Add(p);
-        PagesList.ItemsSource = _pages;
-        NavChips.ItemsSource = _pages;
         SitePreview.FlowDirection = _doc.Direction == "rtl" ? FlowDirection.RightToLeft : FlowDirection.LeftToRight;
         CanvasDir.Text = Loc.T(_doc.Direction == "rtl" ? "ed.canvas.rtl" : "ed.canvas.ltr");
         CanvasNote.Text = Loc.T("ed.canvas.note");
 
-        PagesList.SelectedIndex = Math.Max(0, _pages.ToList().FindIndex(p => p.IsHome));
+        RebuildPages(_pages.FirstOrDefault(p => p.IsHome) ?? _pages[0]);
         UpdateSaveState();
 
         _timer = new DispatcherTimerHolder(TimeSpan.FromSeconds(15), () => { if (_dirty) TrySave(); });
@@ -105,7 +104,7 @@ public sealed partial class EditorPage : Page
 
     // ---- state --------------------------------------------------------------------------------
 
-    private PageDoc? Current => PagesList.SelectedItem as PageDoc;
+    private PageDoc? Current => (PagesList.SelectedItem as ListViewItem)?.Tag as PageDoc;
 
     private void MarkDirty()
     {
@@ -156,8 +155,49 @@ public sealed partial class EditorPage : Page
 
     // ---- pages --------------------------------------------------------------------------------
 
+    /// <summary>Builds the page list and the preview nav chips from code (no data binding).</summary>
+    private void RebuildPages(PageDoc? select)
+    {
+        _rebuilding = true;
+        PagesList.Items.Clear();
+        NavChips.Children.Clear();
+        _titleBlocks.Clear();
+
+        foreach (var p in _pages)
+        {
+            var title = new TextBlock { Text = p.Title, TextTrimming = TextTrimming.CharacterEllipsis };
+            _titleBlocks[p] = title;
+
+            var row = new Grid { ColumnSpacing = 8, Padding = new Thickness(2, 6, 2, 6) };
+            row.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+            row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+            var home = new FontIcon
+            {
+                Glyph = "\uE80F",
+                FontSize = 14,
+                Visibility = p.IsHome ? Visibility.Visible : Visibility.Collapsed,
+                Style = (Style)Application.Current.Resources["WeboAccentIcon"],
+            };
+            row.Children.Add(home);
+            Grid.SetColumn(title, 1);
+            row.Children.Add(title);
+
+            PagesList.Items.Add(new ListViewItem { Content = row, Tag = p });
+            NavChips.Children.Add(new TextBlock
+            {
+                Text = p.Title,
+                FontSize = 14,
+                Foreground = new Microsoft.UI.Xaml.Media.SolidColorBrush(Windows.UI.Color.FromArgb(255, 0x20, 0x90, 0xF0)),
+            });
+        }
+        _rebuilding = false;
+
+        PagesList.SelectedIndex = select == null ? -1 : _pages.IndexOf(select);
+    }
+
     private void PagesList_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
+        if (_rebuilding) return;
         var page = Current;
         _updatingUi = true;
         TitleBox.IsEnabled = SlugBox.IsEnabled = SetHomeBtn.IsEnabled = DeleteBtn.IsEnabled = page != null;
@@ -174,7 +214,7 @@ public sealed partial class EditorPage : Page
         var n = _pages.Count + 1;
         var page = new PageDoc { Title = $"{Loc.T("ed.newpage")} {n}", Slug = ProjectStore.MakeSlug($"page-{n}", taken) };
         _pages.Add(page);
-        PagesList.SelectedItem = page;
+        RebuildPages(page);
         MarkDirty();
     }
 
@@ -183,6 +223,9 @@ public sealed partial class EditorPage : Page
         if (_updatingUi || Current is not { } page) return;
         page.Title = TitleBox.Text;
         CanvasTitle.Text = TitleBox.Text;
+        if (_titleBlocks.TryGetValue(page, out var tb)) tb.Text = page.Title;
+        var i = _pages.IndexOf(page);
+        if (i >= 0 && i < NavChips.Children.Count && NavChips.Children[i] is TextBlock chip) chip.Text = page.Title;
         MarkDirty();
     }
 
@@ -204,7 +247,7 @@ public sealed partial class EditorPage : Page
     {
         if (Current is not { } page) return;
         foreach (var p in _pages) p.IsHome = p == page;
-        SetHomeBtn.IsEnabled = false;
+        RebuildPages(page);
         MarkDirty();
     }
 
@@ -222,7 +265,7 @@ public sealed partial class EditorPage : Page
         var wasHome = page.IsHome;
         _pages.Remove(page);
         if (wasHome) _pages[0].IsHome = true;
-        PagesList.SelectedIndex = Math.Min(index, _pages.Count - 1);
+        RebuildPages(_pages[Math.Min(index, _pages.Count - 1)]);
         MarkDirty();
     }
 

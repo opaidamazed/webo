@@ -23,6 +23,20 @@ public sealed partial class SettingsPage : Page
     protected override void OnNavigatedTo(NavigationEventArgs e)
     {
         base.OnNavigatedTo(e);
+        TitleText.Text = Loc.T("st.title");
+        AppearanceHeader.Text = Loc.T("st.appearance");
+        LangLabel.Text = Loc.T("st.lang");
+        LangNote.Text = Loc.T("st.lang.note");
+        ThemeLabel.Text = Loc.T("st.theme");
+        IconHeader.Text = Loc.T("st.icon");
+        IconNote.Text = Loc.T("st.icon.note");
+        ResetBtn.Content = Loc.T("st.icon.reset");
+        ScTitle.Text = Loc.T("st.sc.title");
+        ScNote.Text = Loc.T("st.sc.note");
+        ScDesktopBtn.Content = Loc.T("st.sc.desktop");
+        ScStartBtn.Content = Loc.T("st.sc.start");
+        AboutHeader.Text = Loc.T("st.about");
+        DataText.Text = Loc.T("st.data");
         _loading = true;
 
         LangChoice.Items.Add(Loc.T("st.lang.ar"));
