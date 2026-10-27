@@ -1,0 +1,80 @@
+name: Bisect Webo.xaml
+
+on:
+  workflow_dispatch:
+
+jobs:
+  try:
+    runs-on: windows-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        v: [nostyles, nothemedict, nofontfamily, nocolors, noaccentbrushes, nobasedon, nostaticfont, noimplicit, onlyfonts, onlythemedict, onlystyles]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Apply variant (${{ matrix.v }})
+        shell: pwsh
+        env:
+          V: ${{ matrix.v }}
+        run: |
+          $f = 'src/Webo.App/Themes/Webo.xaml'
+          $t = Get-Content $f -Raw
+          $head = '<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">'
+          switch ($env:V) {
+            'nostyles'        { $t = [regex]::Replace($t, '(?s)<Style .*?</Style>', '') }
+            'nothemedict'     { $t = [regex]::Replace($t, '(?s)<ResourceDictionary\.ThemeDictionaries>.*?</ResourceDictionary\.ThemeDictionaries>', '') }
+            'nofontfamily'    { $t = [regex]::Replace($t, '(?m)^\s*<FontFamily .*?</FontFamily>\s*$', '') }
+            'nocolors'        { $t = [regex]::Replace($t, '(?m)^\s*<Color .*?</Color>\s*$', '') }
+            'noaccentbrushes' { $t = [regex]::Replace($t, '(?m)^\s*<SolidColorBrush x:Key="(AccentFill|TextOnAccent)[^\r\n]*$', '') }
+            'nobasedon'       { $t = [regex]::Replace($t, '\s+BasedOn="[^"]*"', '') }
+            'nostaticfont'    { $t = [regex]::Replace($t, 'Value="\{StaticResource Webo[A-Za-z]*\}"', 'Value="Segoe UI"') }
+            'noimplicit'      { $t = [regex]::Replace($t, '(?s)<Style TargetType="TextBlock">.*?</Style>', '') }
+            'onlyfonts'       { $m = [regex]::Matches($t, '(?m)^\s*<FontFamily .*?</FontFamily>\s*$') | ForEach-Object { $_.Value }; $t = $head + "`n" + ($m -join "`n") + "`n</ResourceDictionary>" }
+            'onlythemedict'   { $m = [regex]::Match($t, '(?s)<ResourceDictionary\.ThemeDictionaries>.*?</ResourceDictionary\.ThemeDictionaries>').Value; $t = $head + "`n" + $m + "`n</ResourceDictionary>" }
+            'onlystyles'      { $m = [regex]::Matches($t, '(?s)<Style .*?</Style>') | ForEach-Object { $_.Value }; $t = $head + "`n" + ($m -join "`n") + "`n</ResourceDictionary>" }
+          }
+          Set-Content $f $t
+          Write-Host "---- resulting file size: $($t.Length) chars"
+
+      - name: Build and classify
+        shell: pwsh
+        env:
+          V: ${{ matrix.v }}
+        run: |
+          dotnet publish src/Webo.App/Webo.App.csproj -c Release -r win-x64 -p:Platform=x64 -o out *> build.log
+          $code = $LASTEXITCODE
+          $log = Get-Content build.log -Raw
+          if ($code -eq 0) { $res = "BUILD OK" }
+          elseif ($log -match 'XamlCompiler\.exe' -and $log -notmatch 'error CS\d+' -and $log -notmatch 'error WMC\d+') { $res = "SILENT XAML CRASH" }
+          else {
+            $errs = (Select-String -Path build.log -Pattern 'error ' | Select-Object -First 3 | ForEach-Object { $_.Line.Trim() }) -join "`n"
+            $res = "DIFFERENT RESULT:`n$errs"
+          }
+          New-Item -ItemType Directory -Force result | Out-Null
+          Set-Content "result/$($env:V).txt" "$($env:V): $res"
+          Write-Host $res
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: result-${{ matrix.v }}
+          path: result/*
+
+  summary:
+    needs: try
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: result-*
+          merge-multiple: true
+          path: results
+      - name: Show results
+        run: |
+          echo "=========== BISECT2 RESULTS ==========="
+          for f in results/*.txt; do cat "$f"; echo "-----"; done
