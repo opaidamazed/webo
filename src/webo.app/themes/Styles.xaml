@@ -1,0 +1,68 @@
+<ResourceDictionary
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!-- Styles only. Colors/fonts live in Webo.xaml (kept separate: both in one file crashes the XAML compiler). -->
+
+    <Style TargetType="TextBlock">
+        <Setter Property="FontFamily" Value="{ThemeResource WeboFont}" />
+        <Setter Property="Foreground" Value="{ThemeResource WeboInkBrush}" />
+    </Style>
+
+    <Style x:Key="WeboDisplayText" TargetType="TextBlock">
+        <Setter Property="FontFamily" Value="{ThemeResource WeboFontBold}" />
+        <Setter Property="FontWeight" Value="Bold" />
+        <Setter Property="FontSize" Value="32" />
+        <Setter Property="Foreground" Value="{ThemeResource WeboInkBrush}" />
+    </Style>
+
+    <Style x:Key="WeboHeadingText" TargetType="TextBlock">
+        <Setter Property="FontFamily" Value="{ThemeResource WeboFontSemiBold}" />
+        <Setter Property="FontSize" Value="18" />
+        <Setter Property="Foreground" Value="{ThemeResource WeboInkBrush}" />
+    </Style>
+
+    <Style x:Key="WeboLabelText" TargetType="TextBlock">
+        <Setter Property="FontFamily" Value="{ThemeResource WeboFontMedium}" />
+        <Setter Property="FontSize" Value="14" />
+        <Setter Property="Foreground" Value="{ThemeResource WeboInkBrush}" />
+    </Style>
+
+    <Style x:Key="WeboMutedText" TargetType="TextBlock">
+        <Setter Property="FontFamily" Value="{ThemeResource WeboFont}" />
+        <Setter Property="FontSize" Value="13" />
+        <Setter Property="Foreground" Value="{ThemeResource WeboMutedBrush}" />
+        <Setter Property="TextWrapping" Value="Wrap" />
+    </Style>
+
+    <Style x:Key="WeboCard" TargetType="Border">
+        <Setter Property="Background" Value="{ThemeResource WeboSurfaceBrush}" />
+        <Setter Property="BorderBrush" Value="{ThemeResource WeboBorderBrush}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="CornerRadius" Value="16" />
+        <Setter Property="Padding" Value="22" />
+    </Style>
+
+    <Style x:Key="WeboPanel" TargetType="Border">
+        <Setter Property="Background" Value="{ThemeResource WeboSurfaceBrush}" />
+        <Setter Property="BorderBrush" Value="{ThemeResource WeboBorderBrush}" />
+        <Setter Property="BorderThickness" Value="0" />
+    </Style>
+
+    <Style x:Key="WeboPillText" TargetType="TextBlock" BasedOn="{StaticResource WeboLabelText}">
+        <Setter Property="FontSize" Value="12" />
+        <Setter Property="Foreground" Value="{ThemeResource WeboAccentBrush}" />
+    </Style>
+
+    <Style x:Key="WeboIconTile" TargetType="Border">
+        <Setter Property="Background" Value="{ThemeResource WeboAccentSoftBrush}" />
+        <Setter Property="CornerRadius" Value="12" />
+        <Setter Property="Width" Value="46" />
+        <Setter Property="Height" Value="46" />
+    </Style>
+
+    <Style x:Key="WeboAccentIcon" TargetType="FontIcon">
+        <Setter Property="Foreground" Value="{ThemeResource WeboAccentBrush}" />
+    </Style>
+
+</ResourceDictionary>
