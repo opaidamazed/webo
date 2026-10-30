@@ -58,7 +58,12 @@ public sealed partial class SettingsPage : Page
     private void LangChoice_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
         if (_loading || LangChoice.SelectedIndex < 0) return;
-        Settings.Current.Language = _langIds[LangChoice.SelectedIndex];
+        var id = _langIds[LangChoice.SelectedIndex];
+        // RadioButtons raises SelectionChanged again when its items are realized (after OnNavigatedTo has finished).
+        // Without this check that late event re-created the page, which raised it again, forever (page flicker, scroll reset).
+        if (id == Settings.Current.Language) return;
+        AppLog.Write("language changed by user: " + Settings.Current.Language + " -> " + id);
+        Settings.Current.Language = id;
         Settings.Save();
         App.Shell?.ApplyLanguage(); // re-creates this page in the new language and direction
     }
@@ -66,7 +71,9 @@ public sealed partial class SettingsPage : Page
     private void ThemeChoice_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
         if (_loading || ThemeChoice.SelectedIndex < 0) return;
-        Settings.Current.Theme = _themeIds[ThemeChoice.SelectedIndex];
+        var id = _themeIds[ThemeChoice.SelectedIndex];
+        if (id == Settings.Current.Theme) return; // same late-event guard as the language choice
+        Settings.Current.Theme = id;
         Settings.Save();
         App.Shell?.ApplyTheme();
     }
