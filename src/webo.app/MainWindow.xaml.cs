@@ -10,6 +10,7 @@ namespace Webo.App;
 public sealed partial class MainWindow : Window
 {
     private bool _navigating;
+    private string? _appliedLang; // language the current page was last built in
 
     public MainWindow()
     {
@@ -89,11 +90,17 @@ public sealed partial class MainWindow : Window
         NavTemplates.Content = Loc.T("nav.templates");
         NavSettings.Content = Loc.T("nav.settings");
 
-        // Re-create the current page so every string is looked up again.
+        // Re-create the current page so every string is looked up again, but only when the language really changed.
+        // (Second line of defence: a page raising this repeatedly can no longer cause a navigation loop.)
+        var langChanged = _appliedLang != Loc.Lang;
+        _appliedLang = Loc.Lang;
         if (ContentFrame.Content == null)
             ContentFrame.Navigate(typeof(Pages.HomePage));
-        else
-            ContentFrame.Navigate(ContentFrame.CurrentSourcePageType, ContentFrame.Content is Pages.EditorPage ep ? ep.ProjectFile : null);
+        else if (langChanged)
+            // No entrance animation: this is a refresh of the same page, not a navigation the user should see.
+            ContentFrame.Navigate(ContentFrame.CurrentSourcePageType,
+                ContentFrame.Content is Pages.EditorPage ep ? ep.ProjectFile : null,
+                new Microsoft.UI.Xaml.Media.Animation.SuppressNavigationTransitionInfo());
     }
 
     // ---- internals ----------------------------------------------------------------------------
