@@ -58,6 +58,7 @@ public static class ProjectStore
         if (doc.Pages.Count == 0)
             doc.Pages.Add(new PageDoc { Title = "Home", Slug = "index", IsHome = true });
         if (!doc.Pages.Any(p => p.IsHome)) doc.Pages[0].IsHome = true;
+        doc.Theme ??= new ThemeDoc();
         return doc;
     }
 
@@ -65,7 +66,7 @@ public static class ProjectStore
     public static void Save(string file, ProjectDoc doc)
     {
         doc.ModifiedAt = DateTime.Now;
-        if (doc.Schema < 2) doc.Schema = 2; // sections were added in schema 2; older files upgrade on their first save
+        if (doc.Schema < 3) doc.Schema = 3; // 2 = sections, 3 = site theme; older files upgrade on their first save
         Write(file, doc, makeBackup: true);
         AddRecent(file, doc);
     }
