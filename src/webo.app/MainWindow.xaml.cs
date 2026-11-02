@@ -31,7 +31,7 @@ public sealed partial class MainWindow : Window
             TitleBar.Visibility = Visibility.Collapsed;
         }
 
-        Root.ActualThemeChanged += (_, _) => UpdateCaptionButtons();
+        Root.ActualThemeChanged += (_, _) => { UpdateCaptionButtons(); UpdateTitleIcon(); };
 
         ApplyTheme();
         ApplyLanguage();
@@ -51,22 +51,31 @@ public sealed partial class MainWindow : Window
         ContentFrame.Navigate(typeof(Pages.HomePage));
     }
 
-    /// <summary>Applies the saved icon to the window and title bar. Returns null on success, else the error text.</summary>
-    public string? ApplyIcon()
+    /// <summary>
+    /// The window/taskbar icon is fixed (the original dark one, same as the exe and the shortcuts).
+    /// Only the image inside the app's own title bar follows the theme.
+    /// </summary>
+    public void ApplyIcon()
     {
-        var id = Settings.Current.AppIcon;
-        var err = IconService.ApplyToWindow(AppWindow, id);
+        var err = IconService.ApplyToWindow(AppWindow);
         if (err != null) AppLog.Write("apply icon: " + err);
+        UpdateTitleIcon();
+    }
+
+    /// <summary>In-app only: light theme shows the light icon, dark theme shows the dark icon.</summary>
+    public string CurrentInAppIconId => IconService.InAppId(Root.ActualTheme == ElementTheme.Dark);
+
+    private void UpdateTitleIcon()
+    {
         try
         {
-            var preview = IconService.PreviewPath(id);
+            var preview = IconService.PreviewPath(CurrentInAppIconId);
             if (File.Exists(preview)) TitleIcon.Source = new BitmapImage(new Uri(preview));
         }
         catch (Exception ex)
         {
-            AppLog.Write("title icon preview failed: " + ex.Message);
+            AppLog.Write("title icon failed: " + ex.Message);
         }
-        return err;
     }
 
     public void ApplyTheme()
@@ -78,6 +87,7 @@ public sealed partial class MainWindow : Window
             _ => ElementTheme.Default,
         };
         UpdateCaptionButtons();
+        UpdateTitleIcon();
     }
 
     public void ApplyLanguage()

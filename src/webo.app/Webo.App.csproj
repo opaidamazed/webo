@@ -7,7 +7,7 @@
     <TargetPlatformMinVersion>10.0.17763.0</TargetPlatformMinVersion>
     <RootNamespace>Webo.App</RootNamespace>
     <AssemblyName>Webo</AssemblyName>
-    <Version>0.2.0</Version>
+    <Version>0.3.0</Version>
     <Product>Webo</Product>
     <Company>Creatix Studio</Company>
     <ApplicationManifest>app.manifest</ApplicationManifest>
