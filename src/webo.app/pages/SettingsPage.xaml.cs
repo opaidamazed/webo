@@ -45,7 +45,7 @@ public sealed partial class SettingsPage : Page
         ThemeChoice.Items.Add(Loc.T("st.theme.dark"));
         ThemeChoice.SelectedIndex = Math.Max(0, Array.IndexOf(_themeIds, Settings.Current.Theme));
 
-        var version = Assembly.GetExecutingAssembly().GetName().Version?.ToString(3) ?? "0.3.0";
+        var version = Assembly.GetExecutingAssembly().GetName().Version?.ToString(3) ?? "0.4.0";
         AboutText.Text = Loc.F("st.about.body", version);
 
         _loading = false;

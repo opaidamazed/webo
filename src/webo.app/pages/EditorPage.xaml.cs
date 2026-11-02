@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using System.Diagnostics;
 using System.Text.Json;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
@@ -67,6 +68,9 @@ public sealed partial class EditorPage : Page
         ProjectName.Text = _doc.Name;
         FolderText.Text = Loc.F("ed.folder", Path.GetDirectoryName(_file) ?? "");
 
+        _doc.Theme ??= new ThemeDoc();
+        SyncIdentityUi();
+
         foreach (var p in _doc.Pages) _pages.Add(p);
         PagesList.ItemsSource = _pages;
         _history = new EditHistory(Snapshot());
@@ -114,6 +118,20 @@ public sealed partial class EditorPage : Page
         SlugBox.Header = Loc.T("ed.slug");
         SetHomeBtn.Content = Loc.T("ed.sethome");
         DeleteBtn.Content = Loc.T("ed.delete");
+
+        IdentityExpander.Header = Loc.T("ed.identity");
+        PaletteBox.Header = Loc.T("ed.palette");
+        AccentBox.Header = Loc.T("ed.accent");
+        FontBox.Header = Loc.T("ed.font");
+        RadiusBox.Header = Loc.T("ed.radius");
+        _updatingUi = true;
+        PaletteBox.Items.Clear();
+        foreach (var id in ThemeCatalog.PaletteIds) PaletteBox.Items.Add(Loc.T("pal." + id));
+        FontBox.Items.Clear();
+        foreach (var id in ThemeCatalog.Fonts) FontBox.Items.Add(Loc.T("font." + id));
+        RadiusBox.Items.Clear();
+        foreach (var id in ThemeCatalog.Radii) RadiusBox.Items.Add(Loc.T("radius." + id));
+        _updatingUi = false;
 
         SectionsHeader.Text = Loc.T("ed.sections");
         ToolTipService.SetToolTip(AddSectionBtn, Loc.T("ed.addsection"));
@@ -172,16 +190,17 @@ public sealed partial class EditorPage : Page
 
     // ---- undo / redo --------------------------------------------------------------------------
 
-    private string Snapshot() => JsonSerializer.Serialize(_pages.ToList());
+    private string Snapshot() =>
+        JsonSerializer.Serialize(new EditorSnapshot { Pages = _pages.ToList(), Theme = _doc?.Theme ?? new ThemeDoc() });
 
     /// <summary>Call after every real edit. Records an undo step (merging rapid edits with the same key) and refreshes the preview.</summary>
-    private void CommitEdit(string? mergeKey = null)
+    private void CommitEdit(string? mergeKey = null, bool css = false)
     {
         if (_history == null) return;
         if (!_history.Commit(Snapshot(), mergeKey)) return;
         MarkDirty();
         UpdateUndoRedo();
-        RefreshPreview();
+        RefreshPreview(includeCss: css);
     }
 
     private void Undo_Click(object sender, RoutedEventArgs e)
@@ -198,17 +217,17 @@ public sealed partial class EditorPage : Page
 
     private void ApplySnapshot(string json)
     {
-        List<PageDoc>? restored;
+        EditorSnapshot? restored;
         try
         {
-            restored = JsonSerializer.Deserialize<List<PageDoc>>(json);
+            restored = JsonSerializer.Deserialize<EditorSnapshot>(json);
         }
         catch (Exception ex)
         {
             AppLog.Write("undo restore failed: " + ex.Message);
             return;
         }
-        if (restored == null || restored.Count == 0) return;
+        if (restored == null || restored.Pages.Count == 0) return;
 
         var pageId = Current?.Id;
         var sectionId = CurrentSection?.Id;
@@ -217,11 +236,17 @@ public sealed partial class EditorPage : Page
         try
         {
             _pages.Clear();
-            foreach (var p in restored) _pages.Add(p);
+            foreach (var p in restored.Pages) _pages.Add(p);
         }
         finally
         {
             _restoring = false;
+        }
+
+        if (_doc != null)
+        {
+            _doc.Theme = restored.Theme ?? new ThemeDoc();
+            SyncIdentityUi();
         }
 
         var page = _pages.FirstOrDefault(p => p.Id == pageId) ?? _pages.FirstOrDefault(p => p.IsHome) ?? _pages[0];
@@ -230,7 +255,7 @@ public sealed partial class EditorPage : Page
 
         MarkDirty();
         UpdateUndoRedo();
-        RefreshPreview();
+        RefreshPreview(includeCss: true);
     }
 
     // ---- toolbar ------------------------------------------------------------------------------
@@ -260,6 +285,7 @@ public sealed partial class EditorPage : Page
         EditMode = true,
         SelectedSectionId = CurrentSection?.Id,
         EmptyHint = Loc.T("ed.preview.empty"),
+        FontCss = FontAssets.EmbeddedCss(),
     };
 
     private async Task InitPreviewAsync()
@@ -308,7 +334,7 @@ public sealed partial class EditorPage : Page
         Preview.CoreWebView2.NavigateToString(html);
     }
 
-    private async void RefreshPreview(bool resetScroll = false, bool scrollToSelected = false)
+    private async void RefreshPreview(bool resetScroll = false, bool scrollToSelected = false, bool includeCss = false)
     {
         if (_doc == null || Current is not { } page || _previewFailed || _closed) return;
         if (Preview.CoreWebView2 == null || !_previewLoaded)
@@ -321,7 +347,11 @@ public sealed partial class EditorPage : Page
         {
             var html = SiteRenderer.RenderBody(_doc, _pages, page, RenderOpts());
             var scrollTo = scrollToSelected && CurrentSection != null ? JsonSerializer.Serialize(CurrentSection.Id) : "null";
-            var js = "window.weboUpdate(" + JsonSerializer.Serialize(html) + "," + (resetScroll ? "true" : "false") + "," + scrollTo + ");";
+            // The (small) theme CSS is only re-sent when the identity changed; the page body is swapped in place.
+            var js = includeCss
+                ? "window.weboSetTheme(" + JsonSerializer.Serialize(SiteRenderer.BuildThemeCss(_doc.Theme)) + ");"
+                : "";
+            js += "window.weboUpdate(" + JsonSerializer.Serialize(html) + "," + (resetScroll ? "true" : "false") + "," + scrollTo + ");";
             await Preview.CoreWebView2.ExecuteScriptAsync(js);
         }
         catch (Exception ex)
@@ -451,6 +481,91 @@ public sealed partial class EditorPage : Page
         CommitEdit();
     }
 
+    // ---- site identity ------------------------------------------------------------------------
+
+    private void SyncIdentityUi()
+    {
+        if (_doc == null) return;
+        var t = _doc.Theme;
+        _updatingUi = true;
+        PaletteBox.SelectedIndex = Math.Max(0, Array.IndexOf(ThemeCatalog.PaletteIds, t.Palette));
+        FontBox.SelectedIndex = Math.Max(0, Array.IndexOf(ThemeCatalog.Fonts, t.Font));
+        RadiusBox.SelectedIndex = Math.Max(0, Array.IndexOf(ThemeCatalog.Radii, t.Radius));
+        AccentBox.Text = t.Accent;
+        AccentBox.IsEnabled = t.Palette == ThemeCatalog.Custom;
+        _updatingUi = false;
+    }
+
+    private void Identity_Changed(object sender, SelectionChangedEventArgs e)
+    {
+        if (_updatingUi || _doc == null) return;
+        var t = _doc.Theme;
+        var palette = PaletteBox.SelectedIndex >= 0 ? ThemeCatalog.PaletteIds[PaletteBox.SelectedIndex] : t.Palette;
+        var font = FontBox.SelectedIndex >= 0 ? ThemeCatalog.Fonts[FontBox.SelectedIndex] : t.Font;
+        var radius = RadiusBox.SelectedIndex >= 0 ? ThemeCatalog.Radii[RadiusBox.SelectedIndex] : t.Radius;
+        if (palette == t.Palette && font == t.Font && radius == t.Radius) return; // late event, nothing changed
+
+        t.Palette = palette;
+        t.Font = font;
+        t.Radius = radius;
+        AccentBox.IsEnabled = palette == ThemeCatalog.Custom;
+        CommitEdit(css: true);
+    }
+
+    private void AccentBox_LostFocus(object sender, RoutedEventArgs e)
+    {
+        if (_doc == null) return;
+        var hex = ThemeCatalog.NormalizeHex(AccentBox.Text);
+        if (hex == null)
+        {
+            AccentBox.Text = _doc.Theme.Accent; // not a valid #RRGGBB: put the last good value back
+            return;
+        }
+        AccentBox.Text = hex;
+        if (hex == _doc.Theme.Accent) return;
+        _doc.Theme.Accent = hex;
+        CommitEdit(css: true);
+    }
+
+    // ---- export -------------------------------------------------------------------------------
+
+    private async void Export_Click(object sender, RoutedEventArgs e)
+    {
+        if (_doc == null || _file == null) return;
+        if (_dirty && !TrySave()) return; // export what is on disk, so the project and the site never disagree
+
+        ExportResult result;
+        try
+        {
+            result = SiteExporter.Export(_doc, _pages.ToList(), _file);
+        }
+        catch (Exception ex)
+        {
+            AppLog.Write("export failed: " + ex);
+            await Dialogs.InfoAsync(XamlRoot, Loc.T("ed.export"), Loc.F("ed.export.fail", ex.Message));
+            return;
+        }
+
+        var message = Loc.F("ed.export.done", result.PageCount, result.Folder);
+        if (result.Warnings.Count > 0)
+        {
+            const int max = 10;
+            message += "\n\n" + Loc.T("ed.export.warn") + "\n• " + string.Join("\n• ", result.Warnings.Take(max));
+            if (result.Warnings.Count > max) message += "\n" + Loc.F("ed.export.more", result.Warnings.Count - max);
+        }
+        message += "\n\n" + Loc.T("ed.export.open");
+
+        if (!await Dialogs.ConfirmAsync(XamlRoot, Loc.T("ed.export"), message)) return;
+        try
+        {
+            Process.Start(new ProcessStartInfo { FileName = result.Folder, UseShellExecute = true });
+        }
+        catch (Exception ex)
+        {
+            AppLog.Write("open export folder failed: " + ex.Message);
+        }
+    }
+
     // ---- sections -----------------------------------------------------------------------------
 
     private void SectionsList_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -484,7 +599,7 @@ public sealed partial class EditorPage : Page
             var key = field.Key;
             var box = new TextBox
             {
-                Header = Loc.T(field.LabelKey),
+                Header = Loc.T(field.LabelKey) + (field.Number > 0 ? " " + field.Number : ""),
                 Text = sec.Get(key),
                 MaxLength = 2000,
                 TextWrapping = TextWrapping.Wrap,

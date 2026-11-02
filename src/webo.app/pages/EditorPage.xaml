@@ -63,7 +63,7 @@
 
                 <StackPanel Grid.Column="3" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
                     <Button x:Name="TestBtn" IsEnabled="False" />
-                    <Button x:Name="ExportBtn" IsEnabled="False" />
+                    <Button x:Name="ExportBtn" Click="Export_Click" />
                     <Button x:Name="SaveBtn" Style="{StaticResource AccentButtonStyle}" Click="Save_Click">
                         <Button.KeyboardAccelerators>
                             <KeyboardAccelerator Key="S" Modifiers="Control" />
@@ -199,6 +199,18 @@
                             <TextBlock x:Name="SectionPropsHeader" Style="{StaticResource WeboHeadingText}" TextWrapping="Wrap" />
                             <StackPanel x:Name="SectionFields" Spacing="12" />
                         </StackPanel>
+
+                        <!-- Site identity: one palette, font and corner style for the whole site -->
+                        <Expander x:Name="IdentityExpander" HorizontalAlignment="Stretch"
+                                  HorizontalContentAlignment="Stretch" IsExpanded="False">
+                            <StackPanel Spacing="12">
+                                <ComboBox x:Name="PaletteBox" HorizontalAlignment="Stretch" SelectionChanged="Identity_Changed" />
+                                <TextBox x:Name="AccentBox" FlowDirection="LeftToRight" MaxLength="7"
+                                         PlaceholderText="#2090F0" LostFocus="AccentBox_LostFocus" />
+                                <ComboBox x:Name="FontBox" HorizontalAlignment="Stretch" SelectionChanged="Identity_Changed" />
+                                <ComboBox x:Name="RadiusBox" HorizontalAlignment="Stretch" SelectionChanged="Identity_Changed" />
+                            </StackPanel>
+                        </Expander>
                     </StackPanel>
                 </ScrollViewer>
             </Border>
