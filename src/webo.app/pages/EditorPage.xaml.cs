@@ -1,26 +1,35 @@
+using System.Collections.ObjectModel;
+using System.Text.Json;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Controls.Primitives;
 using Microsoft.UI.Xaml.Navigation;
+using Microsoft.Web.WebView2.Core;
 using Webo.App.Models;
 
 namespace Webo.App.Pages;
 
 /// <summary>
-/// Editor shell (early build). What really works: page list, add/rename/delete/set-home, device widths,
-/// atomic save with a .bak backup, and autosave. The live page preview, element selection, undo/redo,
-/// testing and export are NOT implemented yet and are labelled that way in the UI.
+/// Editor (v0.3). What works: page list, sections (add / reorder / duplicate / delete), a REAL page preview rendered
+/// by <see cref="SiteRenderer"/> inside WebView2 with click-to-select, a field panel per section type, undo/redo,
+/// device widths, atomic save with .bak and autosave. NOT implemented yet: templates, export, testing, images.
 /// </summary>
 public sealed partial class EditorPage : Page
 {
     private ProjectDoc? _doc;
     private string? _file;
-    private readonly List<PageDoc> _pages = new();
-    private readonly Dictionary<PageDoc, TextBlock> _titleBlocks = new();
-    private bool _rebuilding;
+    private readonly ObservableCollection<PageDoc> _pages = new();
     private bool _dirty;
     private bool _updatingUi;
+    private bool _restoring;   // true while undo/redo swaps the page list, so selection events are ignored
+    private bool _closed;
     private DispatcherTimerHolder? _timer;
+    private EditHistory? _history;
+
+    // preview state
+    private bool _previewLoaded;
+    private bool _previewFailed;
+    private bool _pendingRefresh;
 
     public string? ProjectFile => _file;
 
@@ -59,23 +68,28 @@ public sealed partial class EditorPage : Page
         FolderText.Text = Loc.F("ed.folder", Path.GetDirectoryName(_file) ?? "");
 
         foreach (var p in _doc.Pages) _pages.Add(p);
-        SitePreview.FlowDirection = _doc.Direction == "rtl" ? FlowDirection.RightToLeft : FlowDirection.LeftToRight;
-        CanvasDir.Text = Loc.T(_doc.Direction == "rtl" ? "ed.canvas.rtl" : "ed.canvas.ltr");
-        CanvasNote.Text = Loc.T("ed.canvas.note");
+        PagesList.ItemsSource = _pages;
+        _history = new EditHistory(Snapshot());
 
-        RebuildPages(_pages.FirstOrDefault(p => p.IsHome) ?? _pages[0]);
+        PagesList.SelectedIndex = Math.Max(0, _pages.ToList().FindIndex(p => p.IsHome));
         UpdateSaveState();
+        UpdateUndoRedo();
 
         _timer = new DispatcherTimerHolder(TimeSpan.FromSeconds(15), () => { if (_dirty) TrySave(); });
         if (App.Shell != null) App.Shell.Closed += Shell_Closed;
+
+        await InitPreviewAsync();
     }
 
     protected override void OnNavigatedFrom(NavigationEventArgs e)
     {
         base.OnNavigatedFrom(e);
+        _closed = true;
         _timer?.Stop();
         if (App.Shell != null) App.Shell.Closed -= Shell_Closed;
         if (_dirty) TrySave();
+        try { Preview.Close(); }
+        catch (Exception ex) { AppLog.Write("preview close failed: " + ex.Message); }
     }
 
     private void Shell_Closed(object sender, Microsoft.UI.Xaml.WindowEventArgs args)
@@ -100,11 +114,27 @@ public sealed partial class EditorPage : Page
         SlugBox.Header = Loc.T("ed.slug");
         SetHomeBtn.Content = Loc.T("ed.sethome");
         DeleteBtn.Content = Loc.T("ed.delete");
+
+        SectionsHeader.Text = Loc.T("ed.sections");
+        ToolTipService.SetToolTip(AddSectionBtn, Loc.T("ed.addsection"));
+        ToolTipService.SetToolTip(MoveUpBtn, Loc.T("ed.sec.up"));
+        ToolTipService.SetToolTip(MoveDownBtn, Loc.T("ed.sec.down"));
+        ToolTipService.SetToolTip(DupSectionBtn, Loc.T("ed.sec.dup"));
+        ToolTipService.SetToolTip(DelSectionBtn, Loc.T("ed.sec.del"));
+
+        AddSectionMenu.Items.Clear();
+        foreach (var type in SectionCatalog.Types)
+        {
+            var item = new MenuFlyoutItem { Text = Loc.T("sec." + type), Tag = type };
+            item.Click += AddSection_Click;
+            AddSectionMenu.Items.Add(item);
+        }
     }
 
     // ---- state --------------------------------------------------------------------------------
 
-    private PageDoc? Current => (PagesList.SelectedItem as ListViewItem)?.Tag as PageDoc;
+    private PageDoc? Current => PagesList.SelectedItem as PageDoc;
+    private SectionDoc? CurrentSection => SectionsList.SelectedItem as SectionDoc;
 
     private void MarkDirty()
     {
@@ -114,6 +144,12 @@ public sealed partial class EditorPage : Page
 
     private void UpdateSaveState() =>
         SaveState.Text = Loc.T(_dirty ? "ed.unsaved" : "ed.saved");
+
+    private void UpdateUndoRedo()
+    {
+        UndoBtn.IsEnabled = _history?.CanUndo ?? false;
+        RedoBtn.IsEnabled = _history?.CanRedo ?? false;
+    }
 
     private bool TrySave()
     {
@@ -134,6 +170,69 @@ public sealed partial class EditorPage : Page
         }
     }
 
+    // ---- undo / redo --------------------------------------------------------------------------
+
+    private string Snapshot() => JsonSerializer.Serialize(_pages.ToList());
+
+    /// <summary>Call after every real edit. Records an undo step (merging rapid edits with the same key) and refreshes the preview.</summary>
+    private void CommitEdit(string? mergeKey = null)
+    {
+        if (_history == null) return;
+        if (!_history.Commit(Snapshot(), mergeKey)) return;
+        MarkDirty();
+        UpdateUndoRedo();
+        RefreshPreview();
+    }
+
+    private void Undo_Click(object sender, RoutedEventArgs e)
+    {
+        var snapshot = _history?.Undo();
+        if (snapshot != null) ApplySnapshot(snapshot);
+    }
+
+    private void Redo_Click(object sender, RoutedEventArgs e)
+    {
+        var snapshot = _history?.Redo();
+        if (snapshot != null) ApplySnapshot(snapshot);
+    }
+
+    private void ApplySnapshot(string json)
+    {
+        List<PageDoc>? restored;
+        try
+        {
+            restored = JsonSerializer.Deserialize<List<PageDoc>>(json);
+        }
+        catch (Exception ex)
+        {
+            AppLog.Write("undo restore failed: " + ex.Message);
+            return;
+        }
+        if (restored == null || restored.Count == 0) return;
+
+        var pageId = Current?.Id;
+        var sectionId = CurrentSection?.Id;
+
+        _restoring = true;
+        try
+        {
+            _pages.Clear();
+            foreach (var p in restored) _pages.Add(p);
+        }
+        finally
+        {
+            _restoring = false;
+        }
+
+        var page = _pages.FirstOrDefault(p => p.Id == pageId) ?? _pages.FirstOrDefault(p => p.IsHome) ?? _pages[0];
+        PagesList.SelectedItem = page;
+        SectionsList.SelectedItem = page.Sections.FirstOrDefault(s => s.Id == sectionId);
+
+        MarkDirty();
+        UpdateUndoRedo();
+        RefreshPreview();
+    }
+
     // ---- toolbar ------------------------------------------------------------------------------
 
     private void Back_Click(object sender, RoutedEventArgs e)
@@ -150,83 +249,165 @@ public sealed partial class EditorPage : Page
         DevDesktop.IsChecked = tag == "desktop";
         DevTablet.IsChecked = tag == "tablet";
         DevMobile.IsChecked = tag == "mobile";
+        // The page inside WebView2 is responsive (CSS media queries), so a narrower frame is a real mobile/tablet layout.
         DeviceFrame.Width = tag switch { "tablet" => 768, "mobile" => 375, _ => 1000 };
+    }
+
+    // ---- preview (WebView2) -------------------------------------------------------------------
+
+    private RenderOptions RenderOpts() => new()
+    {
+        EditMode = true,
+        SelectedSectionId = CurrentSection?.Id,
+        EmptyHint = Loc.T("ed.preview.empty"),
+    };
+
+    private async Task InitPreviewAsync()
+    {
+        try
+        {
+            // Unpackaged apps would otherwise put WebView2's profile next to the exe (often not writable): use LocalAppData.
+            var dataDir = Path.Combine(Settings.Dir, "WebView2");
+            Directory.CreateDirectory(dataDir);
+            var env = await CoreWebView2Environment.CreateAsync(null, dataDir);
+            if (_closed) return;
+            await Preview.EnsureCoreWebView2Async(env);
+            if (_closed) return;
+
+            var core = Preview.CoreWebView2;
+            core.Settings.AreDefaultContextMenusEnabled = false;
+            core.Settings.AreDevToolsEnabled = false;
+            core.Settings.IsZoomControlEnabled = false;
+            core.Settings.IsStatusBarEnabled = false;
+            core.Settings.IsBuiltInErrorPageEnabled = false;
+            core.WebMessageReceived += Preview_WebMessageReceived;
+            core.NavigationStarting += Preview_NavigationStarting;
+            core.NavigationCompleted += Preview_NavigationCompleted;
+            core.NewWindowRequested += (_, args) => args.Handled = true;
+
+            LoadPreviewDocument();
+        }
+        catch (Exception ex)
+        {
+            // Most likely the WebView2 runtime is missing. Editing and saving must keep working without it.
+            AppLog.Write("preview init failed: " + ex);
+            _previewFailed = true;
+            Preview.Visibility = Visibility.Collapsed;
+            PreviewError.Text = Loc.T("ed.preview.fail");
+            PreviewError.Visibility = Visibility.Visible;
+        }
+    }
+
+    /// <summary>Full (re)load of the preview document. Normal edits use <see cref="RefreshPreview"/> instead.</summary>
+    private void LoadPreviewDocument()
+    {
+        if (_doc == null || Current is not { } page || Preview.CoreWebView2 == null || _closed) return;
+        _previewLoaded = false;
+        var html = SiteRenderer.RenderDocument(_doc, _pages, page, RenderOpts());
+        Preview.CoreWebView2.NavigateToString(html);
+    }
+
+    private async void RefreshPreview(bool resetScroll = false, bool scrollToSelected = false)
+    {
+        if (_doc == null || Current is not { } page || _previewFailed || _closed) return;
+        if (Preview.CoreWebView2 == null || !_previewLoaded)
+        {
+            _pendingRefresh = true; // applied as soon as the document finishes loading
+            return;
+        }
+
+        try
+        {
+            var html = SiteRenderer.RenderBody(_doc, _pages, page, RenderOpts());
+            var scrollTo = scrollToSelected && CurrentSection != null ? JsonSerializer.Serialize(CurrentSection.Id) : "null";
+            var js = "window.weboUpdate(" + JsonSerializer.Serialize(html) + "," + (resetScroll ? "true" : "false") + "," + scrollTo + ");";
+            await Preview.CoreWebView2.ExecuteScriptAsync(js);
+        }
+        catch (Exception ex)
+        {
+            AppLog.Write("preview update failed: " + ex.Message);
+        }
+    }
+
+    private void Preview_NavigationStarting(CoreWebView2 sender, CoreWebView2NavigationStartingEventArgs args)
+    {
+        // The preview is a closed document: it must never navigate to the web or to local files.
+        var uri = args.Uri ?? "";
+        if (uri.StartsWith("http", StringComparison.OrdinalIgnoreCase) ||
+            uri.StartsWith("file", StringComparison.OrdinalIgnoreCase) ||
+            uri.StartsWith("ftp", StringComparison.OrdinalIgnoreCase))
+            args.Cancel = true;
+    }
+
+    private void Preview_NavigationCompleted(CoreWebView2 sender, CoreWebView2NavigationCompletedEventArgs args)
+    {
+        _previewLoaded = args.IsSuccess;
+        if (!args.IsSuccess) AppLog.Write("preview navigation failed: " + args.WebErrorStatus);
+        if (_previewLoaded && _pendingRefresh)
+        {
+            _pendingRefresh = false;
+            RefreshPreview();
+        }
+    }
+
+    private void Preview_WebMessageReceived(CoreWebView2 sender, CoreWebView2WebMessageReceivedEventArgs args)
+    {
+        string message;
+        try { message = args.TryGetWebMessageAsString(); }
+        catch { return; }
+
+        if (message.StartsWith("select:", StringComparison.Ordinal))
+        {
+            var id = message.Substring("select:".Length);
+            // An empty or unknown id clears the selection (click on empty space).
+            SectionsList.SelectedItem = Current?.Sections.FirstOrDefault(s => s.Id == id);
+        }
+        else if (message.StartsWith("page:", StringComparison.Ordinal))
+        {
+            var id = message.Substring("page:".Length);
+            var page = _pages.FirstOrDefault(p => p.Id == id);
+            if (page != null) PagesList.SelectedItem = page;
+        }
     }
 
     // ---- pages --------------------------------------------------------------------------------
 
-    /// <summary>Builds the page list and the preview nav chips from code (no data binding).</summary>
-    private void RebuildPages(PageDoc? select)
-    {
-        _rebuilding = true;
-        PagesList.Items.Clear();
-        NavChips.Children.Clear();
-        _titleBlocks.Clear();
-
-        foreach (var p in _pages)
-        {
-            var title = new TextBlock { Text = p.Title, TextTrimming = TextTrimming.CharacterEllipsis };
-            _titleBlocks[p] = title;
-
-            var row = new Grid { ColumnSpacing = 8, Padding = new Thickness(2, 6, 2, 6) };
-            row.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
-            row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
-            var home = new FontIcon
-            {
-                Glyph = "\uE80F",
-                FontSize = 14,
-                Visibility = p.IsHome ? Visibility.Visible : Visibility.Collapsed,
-                Style = (Style)Application.Current.Resources["WeboAccentIcon"],
-            };
-            row.Children.Add(home);
-            Grid.SetColumn(title, 1);
-            row.Children.Add(title);
-
-            PagesList.Items.Add(new ListViewItem { Content = row, Tag = p });
-            NavChips.Children.Add(new TextBlock
-            {
-                Text = p.Title,
-                FontSize = 14,
-                Foreground = new Microsoft.UI.Xaml.Media.SolidColorBrush(Windows.UI.Color.FromArgb(255, 0x20, 0x90, 0xF0)),
-            });
-        }
-        _rebuilding = false;
-
-        PagesList.SelectedIndex = select == null ? -1 : _pages.IndexOf(select);
-    }
-
     private void PagesList_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
-        if (_rebuilding) return;
+        if (_restoring) return;
         var page = Current;
         _updatingUi = true;
         TitleBox.IsEnabled = SlugBox.IsEnabled = SetHomeBtn.IsEnabled = DeleteBtn.IsEnabled = page != null;
         TitleBox.Text = page?.Title ?? "";
         SlugBox.Text = page?.Slug ?? "";
-        CanvasTitle.Text = page?.Title ?? "";
         SetHomeBtn.IsEnabled = page != null && !page.IsHome;
+        SectionsList.ItemsSource = page?.Sections; // also clears the section selection
+        AddSectionBtn.IsEnabled = page != null;
         _updatingUi = false;
+
+        UpdateSectionButtons();
+        BuildSectionFields(CurrentSection);
+        RefreshPreview(resetScroll: true);
     }
 
     private void AddPage_Click(object sender, RoutedEventArgs e)
     {
+        var language = _doc?.Language ?? "ar";
         var taken = new HashSet<string>(_pages.Select(p => p.Slug), StringComparer.OrdinalIgnoreCase);
         var n = _pages.Count + 1;
         var page = new PageDoc { Title = $"{Loc.T("ed.newpage")} {n}", Slug = ProjectStore.MakeSlug($"page-{n}", taken) };
+        page.Sections.Add(SectionCatalog.Create("text", language));
+        page.Sections.Add(SectionCatalog.Create("footer", language));
         _pages.Add(page);
-        RebuildPages(page);
-        MarkDirty();
+        PagesList.SelectedItem = page;
+        CommitEdit();
     }
 
     private void TitleBox_TextChanged(object sender, TextChangedEventArgs e)
     {
         if (_updatingUi || Current is not { } page) return;
         page.Title = TitleBox.Text;
-        CanvasTitle.Text = TitleBox.Text;
-        if (_titleBlocks.TryGetValue(page, out var tb)) tb.Text = page.Title;
-        var i = _pages.IndexOf(page);
-        if (i >= 0 && i < NavChips.Children.Count && NavChips.Children[i] is TextBlock chip) chip.Text = page.Title;
-        MarkDirty();
+        CommitEdit("title:" + page.Id);
     }
 
     private void SlugBox_LostFocus(object sender, RoutedEventArgs e)
@@ -238,7 +419,7 @@ public sealed partial class EditorPage : Page
         if (slug != page.Slug)
         {
             page.Slug = slug;
-            MarkDirty();
+            CommitEdit();
         }
         SlugBox.Text = page.Slug;
     }
@@ -247,8 +428,8 @@ public sealed partial class EditorPage : Page
     {
         if (Current is not { } page) return;
         foreach (var p in _pages) p.IsHome = p == page;
-        RebuildPages(page);
-        MarkDirty();
+        SetHomeBtn.IsEnabled = false;
+        CommitEdit();
     }
 
     private async void DeletePage_Click(object sender, RoutedEventArgs e)
@@ -265,8 +446,120 @@ public sealed partial class EditorPage : Page
         var wasHome = page.IsHome;
         _pages.Remove(page);
         if (wasHome) _pages[0].IsHome = true;
-        RebuildPages(_pages[Math.Min(index, _pages.Count - 1)]);
-        MarkDirty();
+        PagesList.SelectedIndex = Math.Min(index, _pages.Count - 1);
+        CommitEdit();
+    }
+
+    // ---- sections -----------------------------------------------------------------------------
+
+    private void SectionsList_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (_restoring) return;
+        UpdateSectionButtons();
+        BuildSectionFields(CurrentSection);
+        RefreshPreview(scrollToSelected: true);
+    }
+
+    private void UpdateSectionButtons()
+    {
+        var page = Current;
+        var sec = CurrentSection;
+        var index = page != null && sec != null ? page.Sections.IndexOf(sec) : -1;
+        MoveUpBtn.IsEnabled = index > 0;
+        MoveDownBtn.IsEnabled = page != null && index >= 0 && index < page.Sections.Count - 1;
+        DupSectionBtn.IsEnabled = DelSectionBtn.IsEnabled = sec != null;
+    }
+
+    /// <summary>Builds one text box per field of the selected section's type. Edits go straight into the model.</summary>
+    private void BuildSectionFields(SectionDoc? sec)
+    {
+        SectionFields.Children.Clear();
+        SectionPropsPanel.Visibility = sec == null ? Visibility.Collapsed : Visibility.Visible;
+        if (sec == null) return;
+
+        SectionPropsHeader.Text = Loc.T("ed.sec.props") + " — " + sec.TypeLabel;
+        foreach (var field in SectionCatalog.Fields(sec.Type))
+        {
+            var key = field.Key;
+            var box = new TextBox
+            {
+                Header = Loc.T(field.LabelKey),
+                Text = sec.Get(key),
+                MaxLength = 2000,
+                TextWrapping = TextWrapping.Wrap,
+                AcceptsReturn = field.Multiline,
+                MinHeight = field.Multiline ? 96 : 0,
+            };
+            if (field.IsLink) box.FlowDirection = FlowDirection.LeftToRight;
+            // The handler is attached after Text is set, so building the panel never counts as an edit.
+            box.TextChanged += (_, _) =>
+            {
+                if (_restoring) return;
+                sec.Set(key, box.Text);
+                CommitEdit("sec:" + sec.Id + ":" + key);
+            };
+            SectionFields.Children.Add(box);
+        }
+    }
+
+    private void AddSection_Click(object sender, RoutedEventArgs e)
+    {
+        if (Current is not { } page) return;
+        if ((sender as FrameworkElement)?.Tag is not string type) return;
+
+        var sec = SectionCatalog.Create(type, _doc?.Language ?? "ar");
+        var index = CurrentSection != null ? page.Sections.IndexOf(CurrentSection) + 1 : page.Sections.Count;
+        page.Sections.Insert(index, sec);
+        SectionsList.SelectedItem = sec;
+        CommitEdit();
+    }
+
+    private void MoveUp_Click(object sender, RoutedEventArgs e) => MoveSection(-1);
+    private void MoveDown_Click(object sender, RoutedEventArgs e) => MoveSection(1);
+
+    private void MoveSection(int delta)
+    {
+        if (Current is not { } page || CurrentSection is not { } sec) return;
+        var from = page.Sections.IndexOf(sec);
+        var to = from + delta;
+        if (from < 0 || to < 0 || to >= page.Sections.Count) return;
+
+        page.Sections.Move(from, to);
+        SectionsList.SelectedItem = sec;
+        UpdateSectionButtons();
+        CommitEdit();
+    }
+
+    private void DupSection_Click(object sender, RoutedEventArgs e)
+    {
+        if (Current is not { } page || CurrentSection is not { } sec) return;
+        SectionDoc? copy;
+        try
+        {
+            copy = JsonSerializer.Deserialize<SectionDoc>(JsonSerializer.Serialize(sec));
+        }
+        catch (Exception ex)
+        {
+            AppLog.Write("duplicate section failed: " + ex.Message);
+            return;
+        }
+        if (copy == null) return;
+
+        copy.Id = Guid.NewGuid().ToString("N");
+        page.Sections.Insert(page.Sections.IndexOf(sec) + 1, copy);
+        SectionsList.SelectedItem = copy;
+        CommitEdit();
+    }
+
+    private async void DelSection_Click(object sender, RoutedEventArgs e)
+    {
+        if (Current is not { } page || CurrentSection is not { } sec) return;
+        if (!await Dialogs.ConfirmAsync(XamlRoot, Loc.T("ed.sec.del"), Loc.T("ed.sec.del.confirm"))) return;
+
+        var index = page.Sections.IndexOf(sec);
+        page.Sections.Remove(sec);
+        if (page.Sections.Count > 0) SectionsList.SelectedIndex = Math.Min(index, page.Sections.Count - 1);
+        CommitEdit();
     }
 
     // ---- autosave timer wrapper ---------------------------------------------------------------

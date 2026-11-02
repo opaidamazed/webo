@@ -26,20 +26,22 @@
                 </StackPanel>
             </Border>
 
-            <!-- App icon (requirements section 22) -->
+            <!-- App icon: no choice to make. Outside the app it is always the dark original; inside the app it follows the theme. -->
             <Border Style="{StaticResource WeboCard}">
-                <StackPanel Spacing="16">
+                <StackPanel Spacing="14">
                     <TextBlock x:Name="IconHeader" Style="{StaticResource WeboHeadingText}" />
                     <TextBlock x:Name="IconNote" Style="{StaticResource WeboMutedText}" />
-
-                    <StackPanel x:Name="IconCards" Orientation="Horizontal" Spacing="14" />
-
-                    <StackPanel Orientation="Horizontal" Spacing="10">
-                        <Button x:Name="ResetBtn" Click="ResetIcon_Click" />
+                    <StackPanel Orientation="Horizontal" Spacing="14">
+                        <Image x:Name="InAppIconImage" Width="56" Height="56" />
+                        <TextBlock x:Name="InAppIconLabel" Style="{StaticResource WeboLabelText}" VerticalAlignment="Center" />
                     </StackPanel>
-                    <InfoBar x:Name="IconStatus" IsOpen="False" IsClosable="False" Severity="Informational" />
+                </StackPanel>
+            </Border>
 
-                    <TextBlock x:Name="ScTitle" Style="{StaticResource WeboLabelText}" Margin="0,8,0,0" />
+            <!-- Shortcuts (decision D3: consent first, only our own shortcuts) -->
+            <Border Style="{StaticResource WeboCard}">
+                <StackPanel Spacing="12">
+                    <TextBlock x:Name="ScTitle" Style="{StaticResource WeboHeadingText}" />
                     <TextBlock x:Name="ScNote" Style="{StaticResource WeboMutedText}" />
                     <StackPanel Orientation="Horizontal" Spacing="10">
                         <Button x:Name="ScDesktopBtn" Click="DesktopShortcut_Click" />

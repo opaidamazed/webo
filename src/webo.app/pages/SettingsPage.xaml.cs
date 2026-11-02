@@ -1,7 +1,5 @@
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
-using Microsoft.UI.Xaml.Input;
-using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Media.Imaging;
 using Microsoft.UI.Xaml.Navigation;
 using System.Reflection;
@@ -17,7 +15,7 @@ public sealed partial class SettingsPage : Page
     public SettingsPage()
     {
         InitializeComponent();
-        ActualThemeChanged += (_, _) => BuildIconCards();
+        ActualThemeChanged += (_, _) => ShowInAppIcon();
     }
 
     protected override void OnNavigatedTo(NavigationEventArgs e)
@@ -30,7 +28,6 @@ public sealed partial class SettingsPage : Page
         ThemeLabel.Text = Loc.T("st.theme");
         IconHeader.Text = Loc.T("st.icon");
         IconNote.Text = Loc.T("st.icon.note");
-        ResetBtn.Content = Loc.T("st.icon.reset");
         ScTitle.Text = Loc.T("st.sc.title");
         ScNote.Text = Loc.T("st.sc.note");
         ScDesktopBtn.Content = Loc.T("st.sc.desktop");
@@ -48,11 +45,11 @@ public sealed partial class SettingsPage : Page
         ThemeChoice.Items.Add(Loc.T("st.theme.dark"));
         ThemeChoice.SelectedIndex = Math.Max(0, Array.IndexOf(_themeIds, Settings.Current.Theme));
 
-        var version = Assembly.GetExecutingAssembly().GetName().Version?.ToString(3) ?? "0.2.0";
+        var version = Assembly.GetExecutingAssembly().GetName().Version?.ToString(3) ?? "0.3.0";
         AboutText.Text = Loc.F("st.about.body", version);
 
         _loading = false;
-        BuildIconCards();
+        ShowInAppIcon();
     }
 
     private void LangChoice_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -78,104 +75,22 @@ public sealed partial class SettingsPage : Page
         App.Shell?.ApplyTheme();
     }
 
-    // ---- App icon ----------------------------------------------------------------------------
+    // ---- App icon (read-only: it follows the theme) --------------------------------------------
 
-    private void BuildIconCards()
+    private void ShowInAppIcon()
     {
-        IconCards.Children.Clear();
-        // Brushes that live in theme dictionaries cannot be looked up per element from code, so pick by the page's actual theme.
         var dark = ActualTheme == ElementTheme.Dark;
-        foreach (var option in IconService.Options)
+        var id = IconService.InAppId(dark);
+        try
         {
-            var selected = option.Id == Settings.Current.AppIcon;
-
-            var image = new Image
-            {
-                Width = 72,
-                Height = 72,
-                HorizontalAlignment = HorizontalAlignment.Center,
-            };
-            try
-            {
-                var preview = IconService.PreviewPath(option.Id);
-                if (File.Exists(preview)) image.Source = new BitmapImage(new Uri(preview));
-            }
-            catch (Exception ex)
-            {
-                AppLog.Write("icon preview failed: " + ex.Message);
-            }
-
-            var badges = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 6, HorizontalAlignment = HorizontalAlignment.Center };
-            if (selected)
-                badges.Children.Add(new TextBlock { Text = Loc.T("st.icon.current"), Style = (Style)Application.Current.Resources["WeboPillText"] });
-            if (option.Id == IconService.DefaultId)
-                badges.Children.Add(new TextBlock { Text = (selected ? "· " : "") + Loc.T("st.icon.default"), Style = (Style)Application.Current.Resources["WeboMutedText"], TextWrapping = TextWrapping.NoWrap });
-
-            var choose = new Button
-            {
-                Content = selected ? "✓ " + Loc.T("st.icon.current") : Loc.T("st.icon.choose"),
-                HorizontalAlignment = HorizontalAlignment.Stretch,
-                IsEnabled = !selected,
-                Tag = option.Id,
-            };
-            choose.Click += IconChoose_Click;
-
-            var content = new StackPanel { Spacing = 10, Width = 150 };
-            content.Children.Add(image);
-            content.Children.Add(new TextBlock
-            {
-                Text = Loc.T(option.LabelKey),
-                Style = (Style)Application.Current.Resources["WeboLabelText"],
-                HorizontalAlignment = HorizontalAlignment.Center,
-            });
-            content.Children.Add(badges);
-            content.Children.Add(choose);
-
-            var card = new Border
-            {
-                Style = (Style)Application.Current.Resources["WeboCard"],
-                Padding = new Thickness(16),
-                Child = content,
-                BorderThickness = new Thickness(selected ? 2 : 1),
-                BorderBrush = new SolidColorBrush(selected
-                    ? Windows.UI.Color.FromArgb(255, dark ? (byte)0x3A : (byte)0x20, dark ? (byte)0xA0 : (byte)0x90, dark ? (byte)0xFF : (byte)0xF0)
-                    : (dark
-                        ? Windows.UI.Color.FromArgb(255, 0x23, 0x2C, 0x58)
-                        : Windows.UI.Color.FromArgb(255, 0xD6, 0xDE, 0xEE))),
-            };
-            AutomationProperties_SetName(card, Loc.T(option.LabelKey));
-            IconCards.Children.Add(card);
+            var preview = IconService.PreviewPath(id);
+            if (File.Exists(preview)) InAppIconImage.Source = new BitmapImage(new Uri(preview));
         }
-    }
-
-    private static void AutomationProperties_SetName(DependencyObject d, string name) =>
-        Microsoft.UI.Xaml.Automation.AutomationProperties.SetName(d, name);
-
-    private void IconChoose_Click(object sender, RoutedEventArgs e)
-    {
-        if (sender is Button { Tag: string id }) SelectIcon(id);
-    }
-
-    private void ResetIcon_Click(object sender, RoutedEventArgs e) => SelectIcon(IconService.DefaultId);
-
-    private void SelectIcon(string id)
-    {
-        Settings.Current.AppIcon = id; // the ID is stored, never a file path
-        Settings.Save();
-        var err = App.Shell?.ApplyIcon();
-        BuildIconCards();
-
-        if (err == null)
+        catch (Exception ex)
         {
-            IconStatus.Severity = InfoBarSeverity.Success;
-            IconStatus.Message = Loc.T("st.icon.applied");
+            AppLog.Write("icon preview failed: " + ex.Message);
         }
-        else
-        {
-            IconStatus.Severity = InfoBarSeverity.Warning;
-            IconStatus.Message = Loc.F("st.icon.fail", err);
-        }
-        IconStatus.IsOpen = true;
+        InAppIconLabel.Text = Loc.F("st.icon.inapp", Loc.T(dark ? "st.icon.dark" : "st.icon.light"));
     }
 
     // ---- Shortcuts (decision D3: consent first, only our own shortcuts) ----------------------
@@ -192,7 +107,8 @@ public sealed partial class SettingsPage : Page
         if (!ok) return;
 
         var exe = Environment.ProcessPath ?? "";
-        var result = ShortcutHelper.Upsert(lnk, exe, IconService.IconPath(Settings.Current.AppIcon), out var error);
+        // Shortcuts always use the original dark icon, the same as the installer's shortcuts.
+        var result = ShortcutHelper.Upsert(lnk, exe, IconService.IconPath(IconService.DefaultId), out var error);
         switch (result)
         {
             case ShortcutResult.Ok:
