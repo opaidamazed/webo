@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="src/Webo.App/Assets/Brand/derived/icons/dark/preview-256.png" alt="Webo" width="120" />
+<img src="src/webo.App/assets/brand/derived/icons/dark/preview-256.png" alt="Webo" width="120" />
 
 # Webo — ويبو
 
