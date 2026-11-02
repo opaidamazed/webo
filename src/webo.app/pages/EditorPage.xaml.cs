@@ -267,11 +267,12 @@ public sealed partial class EditorPage : Page
         try
         {
             // Unpackaged apps would otherwise put WebView2's profile next to the exe (often not writable): use LocalAppData.
+            // The documented environment variable is used instead of CoreWebView2Environment.CreateAsync(...), whose overloads
+            // differ between WebView2 SDK versions. It must be set before the first WebView2 of the process is created.
             var dataDir = Path.Combine(Settings.Dir, "WebView2");
             Directory.CreateDirectory(dataDir);
-            var env = await CoreWebView2Environment.CreateAsync(null, dataDir);
-            if (_closed) return;
-            await Preview.EnsureCoreWebView2Async(env);
+            Environment.SetEnvironmentVariable("WEBVIEW2_USER_DATA_FOLDER", dataDir);
+            await Preview.EnsureCoreWebView2Async();
             if (_closed) return;
 
             var core = Preview.CoreWebView2;
