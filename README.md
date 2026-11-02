@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="src/webo.app/assets/brand/derived/icons/dark/preview-256.png" alt="Webo" width="120" />
+<img src="src/Webo.App/Assets/Brand/derived/icons/dark/preview-256.png" alt="Webo" width="120" />
 
 # Webo — ويبو
 
@@ -23,7 +23,7 @@
 
 ## ⚠️ حالة المشروع
 
-**Webo في مرحلة المعاينة المبكرة (Early Preview).** الأساس مُنفَّذ وما زال قيد الاختبار: واجهة عربية/إنجليزية، إدارة المشاريع والصفحات، الحفظ الآمن، سياسة أيقونة التطبيق، وبرنامج التثبيت. وفي v0.3.0 أُضيفت **المرحلة الأولى من المحرر البصري** (أقسام الصفحة، معاينة حقيقية، تحديد بالنقر، تراجع/إعادة) وهي **لم تُجرَّب على أجهزة Windows بعد**. أما **القوالب والتصدير والاختبارات وإدارة الصور فلم تُنفَّذ بعد** (انظر [خارطة الطريق](#-خارطة-الطريق)). لا يوجد في هذا الإصدار ما يدّعي غير ذلك، والواجهة نفسها تكتب "قريبًا" على كل ما لم يكتمل.
+**Webo في مرحلة المعاينة المبكرة (Early Preview).** الأساس مُنفَّذ وما زال قيد الاختبار: واجهة عربية/إنجليزية، إدارة المشاريع والصفحات، الحفظ الآمن، سياسة أيقونة التطبيق، وبرنامج التثبيت. وأُضيف في v0.3.0 المحرر البصري (أقسام الصفحة، معاينة حقيقية، تحديد بالنقر، تراجع/إعادة) وهو **جُرِّب بناؤه فقط**. وفي v0.4.0 أُضيف **هوية الموقع** (ألوان وخط وحواف)، و**5 أقسام جديدة** (خطوات، أرقام، آراء، أسئلة شائعة، تواصل)، و**تصدير الموقع كملفات HTML/CSS** مع فحوصات قبل النشر، وهي **لم تُجرَّب على أجهزة Windows بعد**. أما القوالب وإدارة الصور وتعديل النص مباشرة داخل المعاينة فلم تُنفَّذ بعد.
 
 ## 💡 الفكرة
 
@@ -37,7 +37,7 @@
 - **ملكية كاملة لبياناتك:** مشاريعك في مكان تختاره أنت، وإزالة البرنامج لا تحذفها.
 - **صدق في الأداء:** لا تُعرض وظيفة تحتاج خادمًا أو قاعدة بيانات على أنها تعمل لمجرد وجود واجهتها.
 
-## ✅ ما هو مُنفَّذ في v0.3.0 (قيد الاختبار)
+## ✅ ما هو مُنفَّذ في v0.4.0 (قيد الاختبار)
 
 | المجال | الحالة (التحقق على أجهزة Windows جارٍ) |
 |---|---|
@@ -53,8 +53,11 @@
 | أقسام الصفحة: إضافة، ترتيب، تكرار، حذف (5 أنواع: رئيسي، نص، مزايا، دعوة لإجراء، تذييل) | مُنفَّذ (جديد، لم يُجرَّب بعد) |
 | معاينة حقيقية للصفحة داخل WebView2 + تحديد القسم بالنقر + تعديل حقوله | مُنفَّذ (جديد، لم يُجرَّب بعد) |
 | التراجع والإعادة (يشمل الصفحات والأقسام والحقول) | مُنفَّذ (جديد، لم يُجرَّب بعد) |
-| القوالب ومكتبة المكونات، إدارة الصور والأصول | لم يُنفَّذ |
-| الاختبارات والتصدير ومعالج النشر | لم يُنفَّذ |
+| هوية الموقع: 6 لوحات ألوان + لون مخصص، 3 خطوط، 3 أشكال للحواف (يشمل التراجع) | مُنفَّذ (جديد، لم يُجرَّب بعد) |
+| أقسام جديدة: خطوات، أرقام، آراء العملاء، أسئلة شائعة، تواصل (واتساب/هاتف/بريد) | مُنفَّذ (جديد، لم يُجرَّب بعد) |
+| تصدير الموقع: مجلد `export` داخل المشروع (HTML + CSS + الخط، بلا JavaScript) + ملاحظات قبل النشر | مُنفَّذ (جديد، لم يُجرَّب بعد) |
+| القوالب ومكتبة المكونات، إدارة الصور والأصول، تعديل النص داخل المعاينة | لم يُنفَّذ |
+| معالج النشر (رفع الموقع) | لم يُنفَّذ |
 
 ## 📥 التحميل والتثبيت
 
@@ -98,7 +101,10 @@ webo/
 │  │  ├─ Settings              إعدادات المستخدم (LocalAppData)
 │  │  ├─ IconService           سياسة الأيقونة: ثابتة داكنة للنظام، وتتبدّل داخل التطبيق فقط مع الثيم
 │  │  ├─ ShortcutHelper        اختصارات .lnk عبر IShellLink (باتفاقية موافقة)
-│  │  ├─ SiteRenderer          يحوّل النموذج إلى HTML (المعاينة الآن، والتصدير لاحقًا)
+│  │  ├─ SiteRenderer          يحوّل النموذج إلى HTML (للمعاينة وللتصدير)
+│  │  ├─ SiteExporter          يكتب الموقع في مجلد export ويفحصه قبل النشر
+│  │  ├─ ThemeCatalog          لوحات الألوان والخطوط والحواف
+│  │  ├─ FontAssets            الخط المضمّن للمعاينة والتصدير
 │  │  ├─ SectionCatalog        أنواع الأقسام وحقولها ومحتواها الابتدائي
 │  │  ├─ EditHistory           التراجع والإعادة (لقطات من النموذج)
 │  │  ├─ Loc                   نصوص الواجهة (ar/en)
@@ -116,7 +122,8 @@ webo/
 
 ```json
 {
-  "Schema": 2,
+  "Schema": 3,
+  "Theme": { "Palette": "ocean", "Font": "plex", "Radius": "medium" },
   "Id": "…",
   "Name": "موقعي",
   "SiteType": "business",
@@ -152,18 +159,19 @@ webo/
 ```powershell
 dotnet publish src/Webo.App/Webo.App.csproj -c Release -r win-x64 -p:Platform=x64 -o out
 # المثبّت (اختياري)
-ISCC.exe /DAppVersion=0.3.0 installer\webo.iss
+ISCC.exe /DAppVersion=0.4.0 installer\webo.iss
 ```
 
-أو دع **GitHub Actions** يبني لك: شغّل workflow **Build Webo (Windows)** من تبويب Actions، أو ادفع وسمًا مثل `v0.3.0` ليُنشر Release تلقائيًا.
+أو دع **GitHub Actions** يبني لك: شغّل workflow **Build Webo (Windows)** من تبويب Actions، أو ادفع وسمًا مثل `v0.4.0` ليُنشر Release تلقائيًا.
 
 ## 🗺️ خارطة الطريق
 
 - [x] **المرحلة 1 — الأساس:** الهيكل، الواجهة ثنائية اللغة، المشاريع والصفحات، الحفظ الآمن، الإعدادات، المثبّت
 - [x] **المحرر البصري — المرحلة 1 (v0.3.0، قيد الاختبار):** معاينة حقيقية عبر WebView2، تحديد الأقسام بالنقر، لوحة الخصائص، تراجع/إعادة
-- [ ] **المحرر البصري — المرحلة 2:** تعديل النص مباشرة داخل المعاينة، السحب والإفلات، الصور والأصول، الهوية البصرية (ألوان وخطوط الموقع)
+- [x] **الهوية البصرية والأقسام والتصدير (v0.4.0، قيد الاختبار)**
+- [ ] **المحرر البصري — المرحلة 2:** تعديل النص مباشرة داخل المعاينة، السحب والإفلات، الصور والأصول، أقسام قابلة للتكرار بلا حد ثابت
 - [ ] **القوالب ومكتبة المكونات**، ومعالج الأسئلة التوجيهية
-- [ ] **التصدير** (ملفات HTML/CSS/JS جاهزة) والاختبارات قبل التصدير ومعالج النشر
+- [ ] **معالج النشر** (رفع الموقع المُصدَّر) واختبارات أعمق قبل النشر
 - [ ] **المراحل المتقدمة:** نماذج، SEO، تقارير، إدارة الأصول
 - [ ] **التجهيز للإصدار:** اختبار التوافق والأمان، توقيع الملفات، حزم تحديث يدوية
 - [ ] **موقع المنتج الرسمي**
@@ -186,7 +194,7 @@ ISCC.exe /DAppVersion=0.3.0 installer\webo.iss
 
 **Webo** is a Windows desktop app for building **multi-page websites visually, without writing code**. It is built with **C# / WinUI 3 / .NET 8**, ships as an unpackaged, self-contained app with an Inno Setup installer, and is designed **Arabic-first** (full RTL UI, IBM Plex Sans Arabic) while also supporting English (LTR).
 
-**Status: early preview (v0.3.0).** Implemented (still under testing): bilingual UI, light/dark themes, project creation and page management, atomic autosave with `.bak` backups, recent projects, a fixed dark app icon (switching light/dark inside the app only), and a per-user installer. **New in v0.3.0, not yet verified on real Windows machines:** page sections (add / reorder / duplicate / delete), a real WebView2 page preview with click-to-select, per-section field editing, and undo/redo. **Not implemented yet:** templates and components, image/asset management, testing and export. The UI labels everything unfinished as "coming soon".
+**Status: early preview (v0.4.0).** Implemented (still under testing): bilingual UI, light/dark themes, project creation and page management, atomic autosave with `.bak` backups, recent projects, a fixed dark app icon (switching light/dark inside the app only), and a per-user installer. **New in v0.3.0, not yet verified on real Windows machines:** page sections (add / reorder / duplicate / delete), a real WebView2 page preview with click-to-select, per-section field editing, and undo/redo. **New in v0.4.0, not yet verified on real Windows machines:** site identity (palette, font, corner style), five more section types (steps, numbers, testimonials, FAQ, contact), and exporting the site as plain HTML/CSS files with pre-publish checks. **Not implemented yet:** templates and components, image/asset management, inline text editing in the preview, and a publishing wizard. The UI labels everything unfinished as "coming soon".
 
 **Architecture in one paragraph:** a site is stored as structured data (`project.webo.json`: pages, properties, language, direction), not as hand-edited HTML. That model will be the single source of truth for editing, preview, testing and export. Settings are per-user in `%LOCALAPPDATA%\Webo`; saves are atomic; the app never touches files or shortcuts it didn't create; and the UI language is independent from the language of the site being built.
 
