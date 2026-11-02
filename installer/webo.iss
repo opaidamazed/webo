@@ -1,8 +1,8 @@
 ; Webo installer (Inno Setup 6). Per-user install by default (no admin needed), matching decision D1/D7.
-; Build:  ISCC.exe /DAppVersion=0.3.0 installer\webo.iss   (expects the publish output in ..\out)
+; Build:  ISCC.exe /DAppVersion=0.4.0 installer\webo.iss   (expects the publish output in ..\out)
 
 #ifndef AppVersion
-  #define AppVersion "0.3.0"
+  #define AppVersion "0.4.0"
 #endif
 #define AppName "Webo"
 #define AppExe "Webo.exe"
