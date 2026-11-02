@@ -6,7 +6,7 @@ namespace Webo.App.Models;
 /// </summary>
 public sealed class ProjectDoc
 {
-    public int Schema { get; set; } = 2;
+    public int Schema { get; set; } = 3;
     public string Id { get; set; } = Guid.NewGuid().ToString("N");
     public string Name { get; set; } = "";
     public string SiteType { get; set; } = "business";
@@ -15,6 +15,25 @@ public sealed class ProjectDoc
     public DateTime CreatedAt { get; set; } = DateTime.Now;
     public DateTime ModifiedAt { get; set; } = DateTime.Now;
     public List<PageDoc> Pages { get; set; } = new();
+
+    /// <summary>Site-wide look (schema 3). Projects from older versions simply get the defaults.</summary>
+    public ThemeDoc Theme { get; set; } = new();
+}
+
+/// <summary>Site identity: one accent palette, one font and one corner style for the whole site.</summary>
+public sealed class ThemeDoc
+{
+    public string Palette { get; set; } = "ocean";   // ocean | emerald | sunset | royal | rose | slate | custom
+    public string Accent { get; set; } = "#2090F0";  // only used when Palette == "custom"
+    public string Font { get; set; } = "plex";       // plex | system | serif
+    public string Radius { get; set; } = "medium";   // sharp | medium | round
+}
+
+/// <summary>What undo/redo stores: everything the editor can change.</summary>
+public sealed class EditorSnapshot
+{
+    public List<PageDoc> Pages { get; set; } = new();
+    public ThemeDoc Theme { get; set; } = new();
 }
 
 public sealed class PageDoc : System.ComponentModel.INotifyPropertyChanged
@@ -71,6 +90,9 @@ public sealed class SectionDoc : System.ComponentModel.INotifyPropertyChanged
         "text" => "\uE8D2",
         "features" => "\uE8FD",
         "cta" => "\uE71B",
+        "testimonials" => "\uE734",
+        "faq" => "\uE897",
+        "contact" => "\uE715",
         _ => "\uE7C3",
     };
 
