@@ -41,7 +41,9 @@ public static class ProjectStore
             Language = language,
             Direction = language == "ar" ? "rtl" : "ltr",
         };
-        doc.Pages.Add(new PageDoc { Title = language == "ar" ? "الرئيسية" : "Home", Slug = "index", IsHome = true });
+        var home = new PageDoc { Title = language == "ar" ? "الرئيسية" : "Home", Slug = "index", IsHome = true };
+        foreach (var section in SectionCatalog.Starter(language)) home.Sections.Add(section);
+        doc.Pages.Add(home);
 
         var file = Path.Combine(folder, FileName);
         Write(file, doc, makeBackup: false);
@@ -63,6 +65,7 @@ public static class ProjectStore
     public static void Save(string file, ProjectDoc doc)
     {
         doc.ModifiedAt = DateTime.Now;
+        if (doc.Schema < 2) doc.Schema = 2; // sections were added in schema 2; older files upgrade on their first save
         Write(file, doc, makeBackup: true);
         AddRecent(file, doc);
     }

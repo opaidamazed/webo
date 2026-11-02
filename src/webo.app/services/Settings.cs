@@ -2,12 +2,11 @@ using System.Text.Json;
 
 namespace Webo.App;
 
-/// <summary>Per-user app settings (decision D7): stored in LocalAppData, icon stored as an ID, never a path.</summary>
+/// <summary>Per-user app settings (decision D7): stored in LocalAppData. The app icon is not a setting any more (it follows the theme, see IconService).</summary>
 public sealed class AppSettings
 {
     public string Language { get; set; } = "ar";
     public string Theme { get; set; } = "system"; // system | light | dark
-    public string AppIcon { get; set; } = IconService.DefaultId;
 }
 
 public static class Settings
@@ -38,7 +37,6 @@ public static class Settings
 
         if (s.Language != "ar" && s.Language != "en") s.Language = "ar";
         if (s.Theme != "system" && s.Theme != "light" && s.Theme != "dark") s.Theme = "system";
-        if (!IconService.Options.Any(o => o.Id == s.AppIcon)) s.AppIcon = IconService.DefaultId;
         Current = s;
         Loc.Lang = s.Language;
     }

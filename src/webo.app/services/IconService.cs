@@ -2,22 +2,20 @@ using Microsoft.UI.Windowing;
 
 namespace Webo.App;
 
-public sealed record IconOption(string Id, string LabelKey);
-
 /// <summary>
-/// App icon logic (requirements section 22). Stores the icon ID, never touches the original assets,
-/// falls back to the default icon if a file is missing, and only reports what an API call returned.
+/// App icon policy (decision D2, revised in v0.3.0):
+///  - OUTSIDE the app (exe, window/taskbar, Start menu, desktop, uninstall entry) the icon is always the original DARK one.
+///  - INSIDE the app only, the title-bar image follows the effective UI theme: Light theme -> light icon, Dark theme -> dark icon.
+///  - The MONO icon is used by the installer only (installer/webo.iss). The app never loads it.
+/// There is no user choice and nothing is stored: the icon follows the theme, so there is no setting to get out of sync.
 /// </summary>
 public static class IconService
 {
+    /// <summary>The icon used everywhere outside the app, and in-app while the theme is dark.</summary>
     public const string DefaultId = "dark";
 
-    public static readonly IconOption[] Options =
-    {
-        new("mono", "st.icon.mono"),
-        new("dark", "st.icon.dark"),
-        new("light", "st.icon.light"),
-    };
+    /// <summary>Shown in-app only, while the theme is light.</summary>
+    public const string LightId = "light";
 
     public static string IconPath(string id) =>
         Path.Combine(AppContext.BaseDirectory, "Assets", "Brand", "derived", "icons", id, $"webo-{id}.ico");
@@ -25,15 +23,20 @@ public static class IconService
     public static string PreviewPath(string id) =>
         Path.Combine(AppContext.BaseDirectory, "Assets", "Brand", "derived", "icons", id, "preview-256.png");
 
-    /// <summary>Applies the icon to the window (and the taskbar button if this SDK exposes it). Returns null on success, else an error text.</summary>
-    public static string? ApplyToWindow(AppWindow window, string id)
+    /// <summary>Which icon the in-app title bar shows for the current effective theme.</summary>
+    public static string InAppId(bool darkTheme) => darkTheme ? DefaultId : LightId;
+
+    /// <summary>
+    /// Sets the window (and taskbar button, if this SDK exposes it) to the fixed dark icon. This never changes with the
+    /// theme, so the taskbar and Alt-Tab always match the Start menu and desktop shortcuts. Returns null on success.
+    /// </summary>
+    public static string? ApplyToWindow(AppWindow window)
     {
-        var path = IconPath(id);
+        var path = IconPath(DefaultId);
         if (!File.Exists(path))
         {
             AppLog.Write("icon missing: " + path);
-            path = IconPath(DefaultId); // decision D8: fall back to the embedded default
-            if (!File.Exists(path)) return "icon file missing";
+            return "icon file missing";
         }
 
         try
