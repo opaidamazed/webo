@@ -31,6 +31,8 @@ public sealed partial class MainWindow : Window
             TitleBar.Visibility = Visibility.Collapsed;
         }
 
+        ContentFrame.Navigated += ContentFrame_Navigated;
+
         Root.ActualThemeChanged += (_, _) => { UpdateCaptionButtons(); UpdateTitleIcon(); };
 
         ApplyTheme();
@@ -122,6 +124,15 @@ public sealed partial class MainWindow : Window
         AppWindow.TitleBar.ButtonForegroundColor = dark ? Colors.White : Colors.Black;
         AppWindow.TitleBar.ButtonHoverForegroundColor = dark ? Colors.White : Colors.Black;
         AppWindow.TitleBar.ButtonInactiveForegroundColor = Colors.Gray;
+    }
+
+    /// <summary>
+    /// Inside a project the editor needs the full width and has its own back button, so the app navigation pane
+    /// (Home / Templates / Settings) is hidden there and comes back on every other page.
+    /// </summary>
+    private void ContentFrame_Navigated(object sender, Microsoft.UI.Xaml.Navigation.NavigationEventArgs e)
+    {
+        Nav.IsPaneVisible = e.SourcePageType != typeof(Pages.EditorPage);
     }
 
     private void Nav_SelectionChanged(NavigationView sender, NavigationViewSelectionChangedEventArgs args)
