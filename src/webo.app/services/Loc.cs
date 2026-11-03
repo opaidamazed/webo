@@ -172,7 +172,14 @@ public static class Loc
         ["chk.default"] = ("في الصفحة «{0}» قسم «{1}» ما زال بالنص الافتراضي.", "On the page “{0}”, the “{1}” section still has the starter text."),
         ["chk.link"] = ("في الصفحة «{0}» زر في قسم «{1}» رابطه فارغ أو «#».", "On the page “{0}”, a button in the “{1}” section has an empty or “#” link."),
         ["chk.contact"] = ("في الصفحة «{0}» قسم التواصل بلا أي وسيلة (واتساب أو هاتف أو بريد).", "On the page “{0}”, the contact section has no channel (WhatsApp, phone or email)."),
+
+        // rename project
+        ["ed.rename"] = ("إعادة تسمية المشروع", "Rename project"),
+        ["ed.rename.label"] = ("اسم المشروع", "Project name"),
+        ["ed.rename.note"] = ("يتغيّر الاسم المعروض للمشروع واسم الموقع في الصفحات فقط؛ اسم المجلد على القرص يبقى كما هو.", "Only the displayed project name and the site name in the pages change; the folder name on disk stays the same."),
+        ["ed.rename.empty"] = ("اكتب اسمًا للمشروع.", "Please enter a project name."),
         ["common.ok"] = ("حسنًا", "OK"),
+        ["common.cancel"] = ("إلغاء", "Cancel"),
         ["common.yes"] = ("نعم", "Yes"),
         ["common.no"] = ("لا", "No"),
 

@@ -73,14 +73,14 @@ public static class NewProjectDialog
 
         var dialog = new ContentDialog
         {
-            XamlRoot = root,
             Title = Loc.T("np.title"),
             Content = panel,
             PrimaryButtonText = Loc.T("np.create"),
             CloseButtonText = Loc.T("np.cancel"),
             DefaultButton = ContentDialogButton.Primary,
-            FlowDirection = Loc.IsArabic ? FlowDirection.RightToLeft : FlowDirection.LeftToRight,
         };
+        Dialogs.Prepare(dialog, root);                              // app theme, direction and font
+        Dialogs.ApplyFont(name, type, lang, location, browse, error); // explicit font on every field
 
         string? created = null;
 
