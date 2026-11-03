@@ -1,20 +1,21 @@
-# Webo v0.4.0 — ما تغيّر (انسخ الملفات فوق المشروع بنفس المسارات)
+# Webo v0.4.0 — ما تغيّر مقارنةً بنسخة 0.3.0 التي بنيتها (انسخ الملفات فوق المشروع بنفس المسارات)
 
-## جديد (ملفات جديدة)
-- Services/ThemeCatalog.cs : لوحات الألوان (6 + مخصص)، الخطوط، شكل الحواف، حساب لون النص فوق اللون الأساسي
-- Services/FontAssets.cs   : الخط المضمّن (IBM Plex Sans Arabic) كـ base64 للمعاينة وكملفات للتصدير
-- Services/SiteExporter.cs : تصدير الموقع إلى <مجلد المشروع>\export + فحوصات قبل النشر
+## ملاحظاتك الأخيرة
+1) المودالز (إنشاء مشروع، التأكيدات...) والخط
+   - Services/Dialogs.cs      : Dialogs.Prepare = ثيم التطبيق + اتجاه + خط Plex على كل مودال (المودال يُفتح خارج نافذة التطبيق فلا يرث الثيم)
+                                + PromptAsync جديد (سؤال بسطر واحد)
+   - Services/NewProjectDialog.cs : يستخدم Prepare ويثبّت الخط على كل حقل
+   - Themes/Webo.xaml         : ألوان المودال (الخلفية، الحدود، الفاصل) بلوحة التطبيق بدل الرمادي الافتراضي
+   - Pages/EditorPage.xaml.cs : التلميحات (tooltips) وقائمة إضافة القسم بخط التطبيق صراحةً
+2) الشريط الجانبي (الرئيسية/القوالب/الإعدادات) يختفي أثناء العمل داخل المشروع ويرجع في باقي الصفحات
+   - MainWindow.xaml.cs
+3) إعادة تسمية المشروع: زر قلم بجانب اسم المشروع في شريط الأدوات (يشمل التراجع، ويحدّث قائمة المشاريع الأخيرة فورًا).
+   اسم المجلد على القرص لا يتغيّر.
+   - Pages/EditorPage.xaml(.cs), Models/ProjectDoc.cs, Services/Loc.cs
 
-## معدّل
-- Models/ProjectDoc.cs        : Schema 3، ThemeDoc، EditorSnapshot (التراجع يشمل الهوية الآن)
-- Services/SiteRenderer.cs    : ثيم بمتغيرات CSS، 5 أقسام جديدة، وضع التصدير (CSS خارجي بلا JavaScript)
-- Services/SectionCatalog.cs  : أنواع الأقسام الجديدة وحقولها ومحتواها الابتدائي + اكتشاف النص الافتراضي
-- Services/ProjectStore.cs    : رفع Schema إلى 3 عند الحفظ، وضمان وجود Theme
-- Services/Loc.cs             : نصوص الهوية والأقسام والتصدير والفحوصات (ar/en)
-- Pages/EditorPage.xaml(.cs)  : لوحة "هوية الموقع"، زر التصدير، حقول مرقّمة
-- Webo.App.csproj / installer/webo.iss / Pages/SettingsPage.xaml.cs / README.md : الإصدار 0.4.0 وتحديث التوثيق
+## هوية الموقع والأقسام والتصدير (من الرسالة السابقة)
+- جديد: Services/ThemeCatalog.cs, FontAssets.cs, SiteExporter.cs
+- معدّل: SiteRenderer.cs, SectionCatalog.cs, ProjectStore.cs, Loc.cs, ProjectDoc.cs, EditorPage.xaml(.cs)
 
-## سلوك التصدير
-- المجلد: <مجلد المشروع>\export  (index.html + صفحات + assets\site.css + assets\fonts)
-- عند إعادة التصدير يُحذف فقط ما كتبه التصدير السابق (قائمة في export\.webo-export.json)؛ لا يُحذف أي ملف آخر
-- الفحوصات لا تمنع التصدير؛ تعرض ملاحظات (نص افتراضي، زر بلا رابط، قسم تواصل بلا وسيلة…)
+## الإصدار
+- Webo.App.csproj / installer/webo.iss / Pages/SettingsPage.xaml.cs / README.md : 0.4.0
