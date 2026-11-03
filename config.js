@@ -5,5 +5,5 @@
   Until then, the button points to the latest GitHub Release.
 */
 window.WEBO_SITE_CONFIG = {
-  DOWNLOAD_URL: "https://github.com/opaidamazed/webo/releases/latest"
+  DOWNLOAD_URL: "https://drive.google.com/file/d/1oMp83tlbSV7mRlvqVMO9syyPMLLB_Csf/view?usp=sharing"
 };
