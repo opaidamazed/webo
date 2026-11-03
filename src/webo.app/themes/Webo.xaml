@@ -35,6 +35,12 @@
             <SolidColorBrush x:Key="AccentFillColorSecondaryBrush" Color="#1F88E6" />
             <SolidColorBrush x:Key="AccentFillColorTertiaryBrush" Color="#0F5FA8" />
             <SolidColorBrush x:Key="TextOnAccentFillColorPrimaryBrush" Color="#FFFFFF" />
+            <!-- Dialogs (New project, confirmations...) in the app palette instead of the system grey. -->
+            <SolidColorBrush x:Key="ContentDialogBackground" Color="#F3F6FC" />
+            <SolidColorBrush x:Key="ContentDialogTopOverlay" Color="#FFFFFF" />
+            <SolidColorBrush x:Key="ContentDialogBorderBrush" Color="#D6DEEE" />
+            <SolidColorBrush x:Key="ContentDialogSeparatorBorderBrush" Color="#D6DEEE" />
+            <SolidColorBrush x:Key="ContentDialogForeground" Color="#0B1033" />
         </ResourceDictionary>
 
         <ResourceDictionary x:Key="Dark">
@@ -51,6 +57,12 @@
             <SolidColorBrush x:Key="AccentFillColorSecondaryBrush" Color="#5BB0FF" />
             <SolidColorBrush x:Key="AccentFillColorTertiaryBrush" Color="#2A86E0" />
             <SolidColorBrush x:Key="TextOnAccentFillColorPrimaryBrush" Color="#00102A" />
+            <!-- Dialogs (New project, confirmations...) in the app palette instead of the system grey. -->
+            <SolidColorBrush x:Key="ContentDialogBackground" Color="#070B22" />
+            <SolidColorBrush x:Key="ContentDialogTopOverlay" Color="#0E1433" />
+            <SolidColorBrush x:Key="ContentDialogBorderBrush" Color="#232C58" />
+            <SolidColorBrush x:Key="ContentDialogSeparatorBorderBrush" Color="#232C58" />
+            <SolidColorBrush x:Key="ContentDialogForeground" Color="#EEF2FF" />
         </ResourceDictionary>
 
     </ResourceDictionary.ThemeDictionaries>
