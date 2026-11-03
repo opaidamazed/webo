@@ -49,6 +49,35 @@
     menuToggle.setAttribute("aria-expanded", "false");
   }));
 
+  // Subtle pointer spotlight and restrained 3D tilt for desktop pointers.
+  const featureCards = document.querySelectorAll(".feature-card");
+  const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const finePointer = window.matchMedia("(hover: hover) and (pointer: fine)").matches;
+
+  if (finePointer && !reducedMotion) {
+    featureCards.forEach((card) => {
+      card.addEventListener("pointermove", (event) => {
+        const rect = card.getBoundingClientRect();
+        const localX = event.clientX - rect.left;
+        const localY = event.clientY - rect.top;
+        const normalizedX = (localX / Math.max(rect.width, 1) - 0.5) * 2;
+        const normalizedY = (localY / Math.max(rect.height, 1) - 0.5) * 2;
+
+        card.style.setProperty("--spot-x", localX + "px");
+        card.style.setProperty("--spot-y", localY + "px");
+        card.style.setProperty("--tilt-x", (normalizedX * 1.15) + "deg");
+        card.style.setProperty("--tilt-y", (normalizedY * -1.1) + "deg");
+      }, { passive: true });
+
+      card.addEventListener("pointerleave", () => {
+        card.style.setProperty("--tilt-x", "0deg");
+        card.style.setProperty("--tilt-y", "0deg");
+        card.style.setProperty("--spot-x", "50%");
+        card.style.setProperty("--spot-y", "50%");
+      }, { passive: true });
+    });
+  }
+
   document.getElementById("year").textContent = new Date().getFullYear();
 
   const revealItems = document.querySelectorAll(".reveal");
