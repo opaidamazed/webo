@@ -32,6 +32,7 @@ public sealed class ThemeDoc
 /// <summary>What undo/redo stores: everything the editor can change.</summary>
 public sealed class EditorSnapshot
 {
+    public string Name { get; set; } = "";
     public List<PageDoc> Pages { get; set; } = new();
     public ThemeDoc Theme { get; set; } = new();
 }
