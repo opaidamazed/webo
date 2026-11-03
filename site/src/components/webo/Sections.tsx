@@ -372,6 +372,54 @@ export function ArabicFirst() {
 }
 
 /* ---------------- Export ---------------- */
+const exportCode = `<section class="hero">
+  <h1>From idea…</h1>
+  <a class="btn">Start</a>
+</section>
+
+.hero {
+  display: grid;
+  gap: var(--space-6);
+  color: var(--brand);
+}`;
+
+function TypingCode() {
+  const [visibleLength, setVisibleLength] = useState(0);
+  const [started, setStarted] = useState(false);
+  const ref = useRef<HTMLPreElement>(null);
+
+  useEffect(() => {
+    const node = ref.current;
+    if (!node) return;
+    const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (reduced) {
+      setVisibleLength(exportCode.length);
+      return;
+    }
+    const observer = new IntersectionObserver(([entry]) => {
+      if (entry.isIntersecting) {
+        setStarted(true);
+        observer.disconnect();
+      }
+    }, { threshold: 0.35 });
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, []);
+
+  useEffect(() => {
+    if (!started || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    if (visibleLength >= exportCode.length) return;
+    const timer = window.setTimeout(() => setVisibleLength((n) => Math.min(n + 1, exportCode.length)), 17);
+    return () => window.clearTimeout(timer);
+  }, [started, visibleLength]);
+
+  return (
+    <pre ref={ref} aria-label="Example HTML and CSS code being typed" className="typing-code overflow-x-auto rounded-xl border border-border bg-background p-5 text-xs leading-6 text-muted-foreground" dir="ltr">
+      <code>{exportCode.slice(0, visibleLength)}<span className="typing-caret" aria-hidden /></code>
+    </pre>
+  );
+}
+
 export function Export() {
   const { t } = useLang();
   const ref = useReveal<HTMLElement>();
@@ -394,18 +442,7 @@ export function Export() {
               <li key={n} className={`py-1 ${color[k as keyof typeof color]}`} style={{ paddingInlineStart: d * 16 }}>{n}</li>
             ))}
           </ul>
-          <pre aria-hidden className="overflow-x-auto rounded-xl border border-border bg-background p-5 text-xs leading-6 text-muted-foreground">
-{`<section class="hero">
-  <h1>`}<span className="text-foreground">From idea…</span>{`</h1>
-  <a class="btn">Start</a>
-</section>
-
-`}<span className="text-cyan">.hero</span>{` {
-  display: grid;
-  gap: var(--space-6);
-  color: var(--brand);
-}`}
-          </pre>
+          <TypingCode />
         </div>
       </div>
     </section>
@@ -446,10 +483,10 @@ export function Faq() {
                   id={`faq-a-${i}`}
                   role="region"
                   aria-labelledby={`faq-q-${i}`}
-                  className={`grid transition-[grid-template-rows] duration-500 ease-[var(--ease-out)] ${isOpen ? "grid-rows-[1fr]" : "grid-rows-[0fr]"}`}
+                  className={`faq-answer-grid grid transition-[grid-template-rows] duration-700 ease-[cubic-bezier(0.16,1,0.3,1)] ${isOpen ? "grid-rows-[1fr]" : "grid-rows-[0fr]"}`}
                 >
-                  <div className="overflow-hidden" hidden={!isOpen}>
-                    <p className="max-w-2xl pb-6 leading-relaxed text-muted-foreground">{it.a}</p>
+                  <div className="min-h-0 overflow-hidden">
+                    <p className={`faq-answer-copy max-w-2xl pb-6 leading-relaxed text-muted-foreground ${isOpen ? "faq-answer-copy-open" : ""}`}>{it.a}</p>
                   </div>
                 </div>
               </div>
