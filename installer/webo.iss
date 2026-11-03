@@ -6,7 +6,7 @@
 #endif
 #define AppName "Webo"
 #define AppExe "Webo.exe"
-#define IconRel "Assets\Brand\derived\icons\dark\webo-dark.ico"
+#define IconRel "assets\brand\derived\icons\dark\webo-dark.ico"
 
 [Setup]
 AppId={{F236C1B9-6933-4D69-9A10-9061476E954D}
