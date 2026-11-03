@@ -106,13 +106,13 @@ public sealed partial class EditorPage : Page
         DevDesktopText.Text = Loc.T("ed.desktop");
         DevTabletText.Text = Loc.T("ed.tablet");
         DevMobileText.Text = Loc.T("ed.mobile");
-        ToolTipService.SetToolTip(UndoBtn, Loc.T("ed.undo"));
-        ToolTipService.SetToolTip(RedoBtn, Loc.T("ed.redo"));
+        Tip(UndoBtn, Loc.T("ed.undo"));
+        Tip(RedoBtn, Loc.T("ed.redo"));
         TestBtn.Content = Loc.T("ed.test");
         ExportBtn.Content = Loc.T("ed.export");
         SaveBtn.Content = Loc.T("ed.save");
         PagesHeader.Text = Loc.T("ed.pages");
-        ToolTipService.SetToolTip(AddPageBtn, Loc.T("ed.addpage"));
+        Tip(AddPageBtn, Loc.T("ed.addpage"));
         PropsHeader.Text = Loc.T("ed.props");
         TitleBox.Header = Loc.T("ed.pagetitle");
         SlugBox.Header = Loc.T("ed.slug");
@@ -133,21 +133,27 @@ public sealed partial class EditorPage : Page
         foreach (var id in ThemeCatalog.Radii) RadiusBox.Items.Add(Loc.T("radius." + id));
         _updatingUi = false;
 
+        Dialogs.ApplyFont(PaletteBox, FontBox, RadiusBox, AccentBox);
+        Tip(RenameBtn, Loc.T("ed.rename"));
         SectionsHeader.Text = Loc.T("ed.sections");
-        ToolTipService.SetToolTip(AddSectionBtn, Loc.T("ed.addsection"));
-        ToolTipService.SetToolTip(MoveUpBtn, Loc.T("ed.sec.up"));
-        ToolTipService.SetToolTip(MoveDownBtn, Loc.T("ed.sec.down"));
-        ToolTipService.SetToolTip(DupSectionBtn, Loc.T("ed.sec.dup"));
-        ToolTipService.SetToolTip(DelSectionBtn, Loc.T("ed.sec.del"));
+        Tip(AddSectionBtn, Loc.T("ed.addsection"));
+        Tip(MoveUpBtn, Loc.T("ed.sec.up"));
+        Tip(MoveDownBtn, Loc.T("ed.sec.down"));
+        Tip(DupSectionBtn, Loc.T("ed.sec.dup"));
+        Tip(DelSectionBtn, Loc.T("ed.sec.del"));
 
         AddSectionMenu.Items.Clear();
         foreach (var type in SectionCatalog.Types)
         {
-            var item = new MenuFlyoutItem { Text = Loc.T("sec." + type), Tag = type };
+            var item = new MenuFlyoutItem { Text = Loc.T("sec." + type), Tag = type, FontFamily = Dialogs.WeboFont };
             item.Click += AddSection_Click;
             AddSectionMenu.Items.Add(item);
         }
     }
+
+    /// <summary>A tooltip in the app font (tooltips are pop-ups and would otherwise use the system font).</summary>
+    private static void Tip(DependencyObject target, string text) =>
+        ToolTipService.SetToolTip(target, new ToolTip { Content = text, FontFamily = Dialogs.WeboFont });
 
     // ---- state --------------------------------------------------------------------------------
 
@@ -191,7 +197,12 @@ public sealed partial class EditorPage : Page
     // ---- undo / redo --------------------------------------------------------------------------
 
     private string Snapshot() =>
-        JsonSerializer.Serialize(new EditorSnapshot { Pages = _pages.ToList(), Theme = _doc?.Theme ?? new ThemeDoc() });
+        JsonSerializer.Serialize(new EditorSnapshot
+        {
+            Name = _doc?.Name ?? "",
+            Pages = _pages.ToList(),
+            Theme = _doc?.Theme ?? new ThemeDoc(),
+        });
 
     /// <summary>Call after every real edit. Records an undo step (merging rapid edits with the same key) and refreshes the preview.</summary>
     private void CommitEdit(string? mergeKey = null, bool css = false)
@@ -246,6 +257,8 @@ public sealed partial class EditorPage : Page
         if (_doc != null)
         {
             _doc.Theme = restored.Theme ?? new ThemeDoc();
+            if (!string.IsNullOrWhiteSpace(restored.Name)) _doc.Name = restored.Name;
+            ProjectName.Text = _doc.Name;
             SyncIdentityUi();
         }
 
@@ -525,6 +538,28 @@ public sealed partial class EditorPage : Page
         if (hex == _doc.Theme.Accent) return;
         _doc.Theme.Accent = hex;
         CommitEdit(css: true);
+    }
+
+    // ---- rename -------------------------------------------------------------------------------
+
+    private async void Rename_Click(object sender, RoutedEventArgs e)
+    {
+        if (_doc == null) return;
+        var answer = await Dialogs.PromptAsync(XamlRoot, Loc.T("ed.rename"), Loc.T("ed.rename.label"), _doc.Name, 80, Loc.T("ed.rename.note"));
+        if (answer == null) return; // cancelled
+
+        var name = answer.Trim();
+        if (name.Length == 0)
+        {
+            await Dialogs.InfoAsync(XamlRoot, Loc.T("ed.rename"), Loc.T("ed.rename.empty"));
+            return;
+        }
+        if (name == _doc.Name) return;
+
+        _doc.Name = name;
+        ProjectName.Text = name;
+        CommitEdit();   // undoable, and the site name in the preview header updates
+        TrySave();      // so the Home page's recent list shows the new name right away
     }
 
     // ---- export -------------------------------------------------------------------------------

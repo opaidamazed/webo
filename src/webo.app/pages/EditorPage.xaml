@@ -29,6 +29,9 @@
                         <TextBlock x:Name="ProjectName" Style="{StaticResource WeboHeadingText}" />
                         <TextBlock x:Name="SaveState" Style="{StaticResource WeboMutedText}" />
                     </StackPanel>
+                    <Button x:Name="RenameBtn" Click="Rename_Click" Padding="8" VerticalAlignment="Center">
+                        <FontIcon Glyph="&#xE70F;" FontSize="14" />
+                    </Button>
                 </StackPanel>
 
                 <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="6" HorizontalAlignment="Center" VerticalAlignment="Center">
