@@ -29,7 +29,7 @@ export function DownloadButton({ label, big = false }: { label: string; big?: bo
   return (
     <a
       href={href}
-      {...(WEBO_DOWNLOAD_URL ? { target: "_blank", rel: "noopener noreferrer", "aria-label": `${label} — ${WEBO_PLATFORM_LABEL} — ${t.cta.drive}` } : {})}
+      {...(WEBO_DOWNLOAD_URL ? { rel: "nofollow", "aria-label": `${label} — ${WEBO_PLATFORM_LABEL} — ${t.cta.drive}` } : {})}
       className={`group inline-flex items-center gap-3 rounded-md bg-gradient-primary font-semibold text-primary-foreground shadow-cta transition-all duration-300 hover:-translate-y-0.5 hover:brightness-110 ${big ? "px-7 py-4 text-base" : "px-5 py-3 text-sm"}`}
     >
       <WindowsIcon />
@@ -117,7 +117,7 @@ export function Header() {
           >
             {t.nav.toggleShort}
           </button>
-          <a href={WEBO_DOWNLOAD_URL || "#download"} {...(WEBO_DOWNLOAD_URL ? { target: "_blank", rel: "noopener noreferrer" } : {})} className="hidden h-9 items-center rounded-md bg-foreground px-4 text-sm font-semibold text-background transition-opacity hover:opacity-90 sm:inline-flex">
+          <a href={WEBO_DOWNLOAD_URL || "#download"} {...(WEBO_DOWNLOAD_URL ? { rel: "nofollow" } : {})} className="hidden h-9 items-center rounded-md bg-foreground px-4 text-sm font-semibold text-background transition-opacity hover:opacity-90 sm:inline-flex">
             {t.nav.download}
           </a>
           <button
@@ -140,7 +140,7 @@ export function Header() {
             {links.map(([h, l]) => (
               <li key={h}><a href={h} onClick={() => setOpen(false)} className="block py-3 text-base">{l}</a></li>
             ))}
-            <li><a href={WEBO_DOWNLOAD_URL || "#download"} {...(WEBO_DOWNLOAD_URL ? { target: "_blank", rel: "noopener noreferrer" } : {})} onClick={() => setOpen(false)} className="block py-3 text-base text-primary">{t.nav.download}</a></li>
+            <li><a href={WEBO_DOWNLOAD_URL || "#download"} {...(WEBO_DOWNLOAD_URL ? { rel: "nofollow" } : {})} onClick={() => setOpen(false)} className="block py-3 text-base text-primary">{t.nav.download}</a></li>
           </ul>
         </nav>
       )}
