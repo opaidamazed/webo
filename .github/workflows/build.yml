@@ -9,14 +9,39 @@ on:
 permissions:
   contents: write
 
-env:
-  WEBO_VERSION: 0.2.0
-
 jobs:
   build:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
+
+      - name: Generate next version
+        id: version
+        shell: pwsh
+        run: |
+          git fetch --tags --force
+
+          $tags = git tag --list "v*" --sort=-version:refname
+          $latest = $tags | Select-Object -First 1
+
+          if (-not $latest) {
+            $latest = "v0.4.0"
+          }
+
+          if ($latest -notmatch '^v(\d+)\.(\d+)\.(\d+)$') {
+            throw "Invalid version tag: $latest"
+          }
+
+          $major = [int]$Matches[1]
+          $minor = [int]$Matches[2]
+          $patch = [int]$Matches[3] + 1
+
+          $nextVersion = "$major.$minor.$patch"
+
+          "WEBO_VERSION=$nextVersion" >> $env:GITHUB_ENV
+          "TAG_NAME=v$nextVersion" >> $env:GITHUB_ENV
+
+          Write-Host "New Webo version: v$nextVersion"
 
       - uses: actions/setup-dotnet@v4
         with:
@@ -99,9 +124,14 @@ jobs:
           name: Webo-${{ env.WEBO_VERSION }}-windows
           path: dist/*
 
-      - name: Publish GitHub pre-release (tags only)
-        if: startsWith(github.ref, 'refs/tags/v')
+      - name: Publish GitHub Release
+        if: github.ref == 'refs/heads/main'
         uses: softprops/action-gh-release@v2
         with:
+          tag_name: ${{ env.TAG_NAME }}
+          name: Webo v${{ env.WEBO_VERSION }}
+          target_commitish: ${{ github.sha }}
           files: dist/*
-          prerelease: true
+          make_latest: true
+          generate_release_notes: true
+          fail_on_unmatched_files: true
