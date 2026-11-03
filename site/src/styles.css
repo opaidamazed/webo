@@ -1,0 +1,225 @@
+@import "tailwindcss" source(none);
+@source "../src";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --font-sans: "IBM Plex Sans Arabic";
+  --font-mono: "IBM Plex Sans Arabic";
+  --font-serif: "IBM Plex Sans Arabic";
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-cyan: var(--cyan);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-line: var(--line);
+}
+
+:root {
+  --radius: 0.5rem;
+  --background: oklch(0.16 0.035 268);
+  --foreground: oklch(0.97 0.01 265);
+  --surface: oklch(0.2 0.04 268);
+  --surface-2: oklch(0.25 0.045 268);
+  --card: oklch(0.2 0.04 268);
+  --card-foreground: oklch(0.97 0.01 265);
+  --popover: oklch(0.2 0.04 268);
+  --popover-foreground: oklch(0.97 0.01 265);
+  --primary: oklch(0.72 0.15 272);
+  --primary-foreground: oklch(0.15 0.04 268);
+  --secondary: oklch(0.25 0.045 268);
+  --secondary-foreground: oklch(0.97 0.01 265);
+  --muted: oklch(0.23 0.04 268);
+  --muted-foreground: oklch(0.74 0.035 265);
+  --accent: oklch(0.82 0.12 210);
+  --accent-foreground: oklch(0.15 0.04 268);
+  --cyan: oklch(0.84 0.12 205);
+  --destructive: oklch(0.65 0.2 25);
+  --destructive-foreground: oklch(0.98 0 0);
+  --border: oklch(0.97 0.01 265 / 10%);
+  --line: oklch(0.97 0.01 265 / 6%);
+  --input: oklch(0.97 0.01 265 / 14%);
+  --ring: oklch(0.78 0.14 272);
+  --gradient-ink: linear-gradient(120deg, oklch(0.97 0.01 265), oklch(0.8 0.12 272) 55%, oklch(0.85 0.11 205));
+  --gradient-primary: linear-gradient(135deg, oklch(0.74 0.15 272), oklch(0.66 0.17 262));
+  --shadow-float: 0 30px 80px -30px oklch(0.05 0.05 270 / 80%), 0 0 0 1px oklch(0.97 0.01 265 / 8%);
+  --shadow-cta: 0 10px 30px -10px oklch(0.72 0.15 272 / 60%);
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@layer base {
+  * { border-color: var(--color-border); }
+  html { scroll-behavior: smooth; }
+  html, body, button, input, textarea, select, code, kbd, pre {
+    font-family: "IBM Plex Sans Arabic";
+  }
+  body {
+    background-color: var(--color-background);
+    color: var(--color-foreground);
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+  }
+  :focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 3px;
+    border-radius: 6px;
+  }
+  ::selection { background: oklch(0.72 0.15 272 / 40%); }
+}
+
+@utility text-ink {
+  background: var(--gradient-ink);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+@utility bg-grid {
+  background-image:
+    linear-gradient(var(--line) 1px, transparent 1px),
+    linear-gradient(90deg, var(--line) 1px, transparent 1px);
+  background-size: 56px 56px;
+}
+@utility bg-noise {
+  position: relative;
+  &::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    opacity: 0.06;
+    mix-blend-mode: overlay;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+  }
+}
+@utility glass {
+  background: oklch(0.22 0.04 268 / 55%);
+  backdrop-filter: blur(14px) saturate(140%);
+  border: 1px solid var(--border);
+}
+@utility shadow-float { box-shadow: var(--shadow-float); }
+@utility shadow-cta { box-shadow: var(--shadow-cta); }
+@utility bg-gradient-primary { background: var(--gradient-primary); }
+
+/* Scroll reveal */
+.reveal {
+  opacity: 0;
+  transform: translateY(24px);
+  transition: opacity 0.9s var(--ease-out), transform 0.9s var(--ease-out);
+  transition-delay: var(--d, 0ms);
+}
+.reveal.in { opacity: 1; transform: none; }
+
+@keyframes float-y { 0%,100% { transform: translateY(0) } 50% { transform: translateY(-8px) } }
+@keyframes draw { from { stroke-dashoffset: 400 } to { stroke-dashoffset: 0 } }
+@keyframes rise { from { opacity: 0; transform: translateY(16px) scale(.98) } to { opacity: 1; transform: none } }
+@keyframes cursor-path {
+  0% { transform: translate(0,0) } 30% { transform: translate(-120px, 60px) }
+  55% { transform: translate(-60px, 150px) } 80% { transform: translate(40px, 90px) } 100% { transform: translate(0,0) }
+}
+@keyframes sel-pulse { 0%,100% { opacity: .55 } 50% { opacity: 1 } }
+@keyframes marquee-dash { to { stroke-dashoffset: -16 } }
+
+.anim-float { animation: float-y 7s ease-in-out infinite; }
+.anim-rise { animation: rise 1s var(--ease-out) both; animation-delay: var(--d, 0ms); }
+.anim-cursor { animation: cursor-path 9s var(--ease-out) infinite; }
+.anim-sel { animation: sel-pulse 2.4s ease-in-out infinite; }
+.anim-dash { stroke-dasharray: 4 4; animation: marquee-dash 1s linear infinite; }
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  .reveal { opacity: 1; transform: none; transition: none; }
+  .anim-float, .anim-rise, .anim-cursor, .anim-sel, .anim-dash { animation: none !important; }
+  * { transition-duration: 0.01ms !important; }
+}
+
+/* Liquid glass — used sparingly on a few high-value surfaces only */
+@utility liquid {
+  position: relative;
+  isolation: isolate;
+  background: linear-gradient(150deg, oklch(0.3 0.05 268 / 96%), oklch(0.21 0.04 268 / 96%));
+  border: 1px solid oklch(0.97 0.01 265 / 22%);
+  box-shadow:
+    inset 0 1px 0 oklch(1 0 0 / 26%),
+    inset 0 -1px 0 oklch(0.05 0.05 270 / 35%),
+    0 0 0 1px oklch(0.05 0.05 270 / 45%),
+    0 18px 40px -18px oklch(0.05 0.05 270 / 85%);
+  &::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    border-radius: inherit;
+    pointer-events: none;
+    background:
+      linear-gradient(115deg, transparent 30%, oklch(1 0 0 / 10%) 45%, transparent 60%) var(--sheen, 0%) 0 / 250% 100% no-repeat,
+      radial-gradient(120% 80% at 15% 0%, oklch(0.85 0.1 240 / 16%), transparent 55%),
+      radial-gradient(90% 70% at 100% 100%, oklch(0.84 0.12 205 / 10%), transparent 60%);
+    transition: background-position 1.2s var(--ease-out);
+  }
+  @supports (backdrop-filter: blur(1px)) {
+    background: linear-gradient(150deg, oklch(0.34 0.05 268 / 52%), oklch(0.22 0.04 268 / 62%));
+    backdrop-filter: blur(12px) saturate(150%);
+  }
+}
+@media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
+  .liquid:hover::before, .group:hover .liquid::before { background-position: 100% 0, 0 0, 0 0; }
+}
+@media (hover: none) {
+  .anim-float, .anim-cursor, .anim-sel, .anim-dash { animation: none !important; }
+}
+
+/* Feature cards: pointer light (fine pointer only) */
+.liquid-card::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  pointer-events: none;
+  opacity: 0;
+  background: radial-gradient(260px circle at var(--mx, 50%) var(--my, 0%), oklch(0.8 0.1 265 / 12%), transparent 70%);
+  transition: opacity 0.5s var(--ease-out);
+}
+@media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
+  .liquid-card:hover::after { opacity: 1; }
+}
+
+/* Scroll progress */
+.scroll-progress {
+  background: linear-gradient(90deg, var(--primary), var(--cyan));
+  transition: transform 0.12s linear;
+}
+@media (prefers-reduced-motion: reduce) { .scroll-progress { transition: none; } }
+
+/* Document scrollbar */
+html { scrollbar-width: thin; scrollbar-color: oklch(0.55 0.1 272) oklch(0.13 0.03 268); }
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: oklch(0.13 0.03 268); }
+::-webkit-scrollbar-thumb {
+  background: oklch(0.5 0.09 272);
+  border-radius: 999px;
+  border: 2px solid oklch(0.13 0.03 268);
+}
+::-webkit-scrollbar-thumb:hover { background: oklch(0.65 0.13 272); }
